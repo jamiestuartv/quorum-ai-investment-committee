@@ -1,0 +1,1785 @@
+<title>Quorum</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Quorum: an AI investment committee that cross-examines a stock pitch before any money goes in.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a dark, full-bleed interactive hero (particle field that forms the pitch's number and reacts to the cursor),
+   then calm theme-aware sections on a 1160px grid: marquee, live committee, steps, bento, proof, CTA. One electric-blue accent. */
+:root {
+  --bg: #ffffff; --bg-2: #f4f5f8; --card: #ffffff; --ink: #0a0b10; --ink-2: #565c69; --ink-3: #8a909c; --line: #e6e8ee;
+  --accent: #4353ff; --accent-2: #7b88ff; --accent-ink: #ffffff; --accent-soft: #eef0ff;
+  --good: #14794b; --good-bg: #e7f5ee; --warn: #a65a06; --warn-bg: #fdf1e2; --bad: #d23a2a; --bad-bg: #fdecea; --muted-bg: #eff0f4;
+  --shadow: 0 1px 2px rgba(10,11,16,.04), 0 18px 48px -18px rgba(10,11,16,.18);
+  --night: #06070b; --night-2: #0d0f17; --night-ink: #f3f4f8; --night-ink-2: #9aa0b4; --night-line: rgba(255,255,255,.09);
+  --f-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --r: 16px; --r-sm: 9px;
+  --ease: cubic-bezier(.2,.7,.2,1);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0a0b10; --bg-2: #11131a; --card: #14161e; --ink: #eef0f5; --ink-2: #a2a8b6; --ink-3: #6e7483; --line: #232632;
+  --accent: #7b88ff; --accent-2: #a4adff; --accent-ink: #0a0b10; --accent-soft: #1b1e3a;
+  --good: #5fd39a; --good-bg: #13291f; --warn: #f0b35c; --warn-bg: #2f2312; --bad: #ff8577; --bad-bg: #331915; --muted-bg: #1c1f28;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 20px 50px -20px rgba(0,0,0,.7); color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0a0b10; --bg-2: #11131a; --card: #14161e; --ink: #eef0f5; --ink-2: #a2a8b6; --ink-3: #6e7483; --line: #232632;
+  --accent: #7b88ff; --accent-2: #a4adff; --accent-ink: #0a0b10; --accent-soft: #1b1e3a;
+  --good: #5fd39a; --good-bg: #13291f; --warn: #f0b35c; --warn-bg: #2f2312; --bad: #ff8577; --bad-bg: #331915; --muted-bg: #1c1f28;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 20px 50px -20px rgba(0,0,0,.7); color-scheme: dark; }
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 var(--f-sans); -webkit-font-smoothing: antialiased; }
+h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.025em; text-wrap: balance; }
+p { margin: 0; }
+a { color: inherit; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+.num, .mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.mono { font-size: 13px; color: var(--ink-2); white-space: pre-wrap; }
+.fine { font-size: 13.5px; color: var(--ink-2); }
+.strong { font-weight: 600; }
+.eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: .14em; color: var(--ink-3); font-weight: 500; }
+.ph { color: var(--ink-3); font-size: 15px; }
+.gutter { padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+.container { max-width: 1160px; margin: 0 auto; }
+.narrow { max-width: 900px; margin: 0 auto; }
+
+/* Nav */
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--night); }
+.nav { position: fixed; top: env(safe-area-inset-top, 0px); left: 0; right: 0; z-index: 20; transition: background .3s, border-color .3s, color .3s; border-bottom: 1px solid transparent;
+  background: color-mix(in srgb, var(--bg) 80%, transparent); backdrop-filter: saturate(1.5) blur(16px); -webkit-backdrop-filter: saturate(1.5) blur(16px); }
+.nav.scrolled { border-bottom-color: var(--line); }
+.nav.over { background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; color: var(--night-ink); border-bottom-color: transparent; }
+.nav-in { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 68px; }
+.brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 600; font-size: 18px; letter-spacing: -0.02em; text-decoration: none; }
+.mark { width: 22px; height: 22px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
+.mark i { border-radius: 50%; background: currentColor; transition: transform .4s var(--ease); }
+.mark i:nth-child(5) { background: var(--accent); }
+.brand:hover .mark i:nth-child(odd) { transform: scale(.6); }
+.nav-links { display: flex; align-items: center; gap: 4px; }
+.nav-links a.lnk { text-decoration: none; color: inherit; opacity: .72; font-size: 14.5px; padding: 8px 12px; border-radius: 8px; transition: opacity .2s; }
+.nav-links a.lnk:hover { opacity: 1; }
+.nav.over .btn.primary { background: var(--night-ink); color: var(--night); border-color: var(--night-ink); }
+.nav-spacer { height: 68px; }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--line); background: var(--card); padding: 10px 18px; border-radius: 999px; cursor: pointer; font-weight: 500; font-size: 15px; text-decoration: none; transition: transform .25s var(--ease), background .2s, border-color .2s, color .2s, box-shadow .2s; will-change: transform; }
+.btn:hover:not(:disabled) { border-color: var(--ink-3); }
+.btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.btn.primary:hover:not(:disabled) { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); box-shadow: 0 10px 30px -10px var(--accent); }
+.btn.ghost { background: transparent; }
+.btn.sm { padding: 7px 14px; font-size: 14px; }
+.btn.lg { padding: 15px 28px; font-size: 16px; }
+.btn.danger { color: var(--bad); }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn .arr { transition: transform .25s var(--ease); }
+.btn:hover .arr { transform: translateX(4px); }
+.btn.light { background: var(--night-ink); color: var(--night); border-color: var(--night-ink); }
+.btn.light:hover { background: #fff; box-shadow: 0 0 0 6px rgba(123,136,255,.25), 0 14px 40px -10px rgba(123,136,255,.7); }
+.btn.glass { background: rgba(255,255,255,.06); color: var(--night-ink); border-color: var(--night-line); }
+.btn.glass:hover { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.25); }
+
+/* ===== Hero ===== */
+.lhero { position: relative; background: var(--night); color: var(--night-ink); overflow: hidden; isolation: isolate; cursor: crosshair;
+  --mx: 50%; --my: 40%; }
+.lhero::before { content: ""; position: absolute; inset: 0; z-index: -2;
+  background:
+    radial-gradient(600px circle at var(--mx) var(--my), rgba(91,108,255,.16), transparent 60%),
+    radial-gradient(900px 500px at 50% 110%, rgba(67,83,255,.22), transparent 70%),
+    linear-gradient(var(--night), var(--night-2)); }
+.lhero::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: .5;
+  background-image: linear-gradient(var(--night-line) 1px, transparent 1px), linear-gradient(90deg, var(--night-line) 1px, transparent 1px);
+  background-size: 64px 64px; mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 80%); -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 80%); }
+#fx { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
+.hero-in { position: relative; z-index: 1; padding-block: calc(68px + clamp(28px, 4.5vw, 60px)) clamp(28px, 3.5vw, 44px); display: grid; justify-items: center; text-align: center; pointer-events: none; }
+.hero-in a, .hero-in button { pointer-events: auto; }
+.chip-top { display: inline-flex; align-items: center; gap: 10px; padding: 6px 14px 6px 8px; border-radius: 999px; border: 1px solid var(--night-line); background: rgba(255,255,255,.04); font-size: 13px; color: var(--night-ink-2); backdrop-filter: blur(6px); }
+.chip-top b { font-weight: 500; color: var(--night); background: var(--night-ink); padding: 2px 8px; border-radius: 999px; font-size: 12px; }
+.lhero h1 { font-size: clamp(42px, 6.6vw, 88px); line-height: .98; letter-spacing: -0.05em; margin-top: 24px; max-width: 13ch; }
+.lhero h1 .grad { background: linear-gradient(100deg, #fff 10%, #a9b2ff 50%, #6574ff 90%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.lhero .lede { font-size: clamp(16.5px, 1.5vw, 19px); color: var(--night-ink-2); max-width: 54ch; margin-top: 22px; }
+.lhero .ctas { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 32px; }
+.num-slot { width: 100%; height: clamp(120px, 16vw, 220px); margin-top: clamp(16px, 2.4vw, 28px); }
+.num-cap { display: grid; justify-items: center; gap: 10px; min-height: 64px; }
+.num-cap .cap { font-size: 14px; color: var(--night-ink-2); transition: opacity .4s; }
+.num-cap .cap b { color: var(--night-ink); font-weight: 500; }
+.num-cap .cap .verdict { display: inline-block; margin-left: 8px; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: rgba(240,179,92,.14); color: #f0b35c; vertical-align: 1px; }
+.hint { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--night-ink-2); opacity: .8; }
+.hint kbd { font: 500 11px var(--f-mono); padding: 2px 6px; border-radius: 5px; border: 1px solid var(--night-line); background: rgba(255,255,255,.05); color: var(--night-ink); }
+.rise { animation: rise .9s var(--ease) both; }
+.rise.d1 { animation-delay: .1s; } .rise.d2 { animation-delay: .2s; } .rise.d3 { animation-delay: .3s; } .rise.d4 { animation-delay: .5s; }
+@keyframes rise { from { opacity: 0; transform: translateY(18px); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
+
+/* Marquee */
+.marquee { background: var(--night-2); color: var(--night-ink-2); border-top: 1px solid var(--night-line); overflow: hidden; padding-block: 18px; font-size: 14px; }
+.marquee-track { display: flex; gap: 48px; width: max-content; animation: slide 38s linear infinite; }
+.marquee span { white-space: nowrap; display: inline-flex; align-items: center; gap: 48px; }
+.marquee span::after { content: "✦"; color: var(--accent-2); font-size: 10px; }
+@keyframes slide { to { transform: translateX(-50%); } }
+
+/* Sections */
+.sec { padding-block: clamp(72px, 10vw, 136px); }
+.sec.alt { background: var(--bg-2); }
+.sec-h { display: grid; gap: 14px; max-width: 660px; margin-bottom: 52px; }
+.sec-h.center { margin-inline: auto; text-align: center; justify-items: center; }
+.sec-h h2 { font-size: clamp(32px, 4.4vw, 52px); line-height: 1.04; letter-spacing: -0.04em; }
+.sec-h p { color: var(--ink-2); font-size: 17.5px; }
+.reveal { transition: opacity .9s var(--ease), transform .9s var(--ease); }
+.js .reveal:not(.in) { opacity: 0; transform: translateY(28px); }
+
+/* Live committee */
+.split { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: clamp(32px, 6vw, 88px); align-items: center; }
+.split .sec-h { margin-bottom: 0; }
+.ticks { display: grid; gap: 14px; margin-top: 28px; padding: 0; list-style: none; }
+.ticks li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; color: var(--ink-2); }
+.ticks li::before { content: ""; width: 18px; height: 18px; margin-top: 3px; border-radius: 50%; background: var(--accent-soft) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='%234353ff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/12px no-repeat; }
+.ticks b { color: var(--ink); font-weight: 600; }
+.tilt { perspective: 1200px; }
+.cc { background: var(--card); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow); padding: 22px; display: grid; gap: 16px; transform-style: preserve-3d; transition: transform .5s var(--ease); position: relative; }
+.cc::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: radial-gradient(500px circle at var(--x, 50%) var(--y, 0%), rgba(123,136,255,.12), transparent 50%); opacity: 0; transition: opacity .3s; }
+.cc:hover::after { opacity: 1; }
+.cc-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.cc-tick { font-weight: 600; }
+.cc-tick small { color: var(--ink-3); font-weight: 500; margin-left: 6px; }
+.live { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-2); font-weight: 500; }
+.live i { width: 7px; height: 7px; border-radius: 50%; background: var(--good); animation: blink 1.4s ease-in-out infinite; }
+@keyframes blink { 50% { opacity: .25; } }
+.cc-rows { display: grid; gap: 2px; }
+.cc-row { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 9px 10px; border-radius: 10px; }
+.cc-row .who { font-size: 13px; color: var(--ink-3); display: block; line-height: 1.2; }
+.cc-row .what { font-size: 14.5px; line-height: 1.35; display: block; opacity: 0; }
+.cc-row .dot { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--line); justify-self: center; }
+.cc-row .chip { opacity: 0; }
+.cc-foot { border-top: 1px solid var(--line); padding-top: 16px; display: flex; justify-content: space-between; align-items: end; gap: 12px; flex-wrap: wrap; }
+.cc-foot .lbl { font-size: 12px; color: var(--ink-3); text-transform: uppercase; letter-spacing: .1em; }
+.cc-was { font-family: var(--f-mono); color: var(--ink-3); position: relative; display: inline-block; }
+.cc-was::after { content: ""; position: absolute; left: -2px; right: -2px; top: 52%; height: 1.5px; background: var(--bad); transform: scaleX(0); transform-origin: left; }
+.cc-now { font-family: var(--f-mono); font-size: clamp(34px, 4vw, 44px); font-weight: 500; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+.cc-dec { font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: var(--warn-bg); color: var(--warn); opacity: 0; }
+.cc.play .cc-row { animation: rowon .5s ease both; animation-delay: var(--d); }
+.cc.play .cc-row .dot { animation: think 1.1s ease both; animation-delay: var(--d); }
+.cc.play .cc-row .what { animation: fadein .5s ease both; animation-delay: calc(var(--d) + .7s); }
+.cc.play .cc-row .chip { animation: pop .4s cubic-bezier(.3,1.6,.5,1) both; animation-delay: calc(var(--d) + .9s); }
+.cc.play .cc-was::after { animation: strike .5s ease both; animation-delay: 5.6s; }
+.cc.play .cc-dec { animation: pop .4s cubic-bezier(.3,1.6,.5,1) both; animation-delay: 6.6s; }
+@keyframes rowon { 30% { background: var(--bg-2); } }
+@keyframes think { 0% { background: transparent; border-color: var(--line); } 40% { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 0 5px var(--accent-soft); } 100% { background: var(--ink); border-color: var(--ink); box-shadow: none; } }
+@keyframes fadein { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+@keyframes pop { from { opacity: 0; transform: scale(.7); } to { opacity: 1; transform: none; } }
+@keyframes strike { to { transform: scaleX(1); } }
+.cc.final .cc-row .what, .cc.final .cc-row .chip, .cc.final .cc-dec { opacity: 1; }
+.cc.final .cc-row .dot { background: var(--ink); border-color: var(--ink); }
+.cc.final .cc-was::after { transform: scaleX(1); }
+
+/* Steps */
+.steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border: 1px solid var(--line); border-radius: var(--r); background: var(--card); overflow: hidden; }
+.step { padding: 32px; display: grid; gap: 12px; align-content: start; border-left: 1px solid var(--line); position: relative; }
+.step:first-child { border-left: 0; }
+.step .n { font-family: var(--f-mono); font-size: 13px; color: var(--accent); }
+.step h3 { font-size: 22px; }
+.step p { color: var(--ink-2); font-size: 15.5px; }
+.step .who { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.step .bar { position: absolute; left: 0; top: 0; height: 2px; width: 100%; background: var(--accent); transform: scaleX(0); transform-origin: left; transition: transform 1.2s var(--ease); }
+.steps.in .step .bar { transform: scaleX(1); }
+.steps.in .step:nth-child(2) .bar { transition-delay: .35s; } .steps.in .step:nth-child(3) .bar { transition-delay: .7s; }
+.tag { font-size: 12.5px; padding: 3px 10px; border-radius: 999px; background: var(--bg-2); color: var(--ink-2); border: 1px solid var(--line); }
+
+/* Bento */
+.bento { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; }
+.tile { grid-column: span 2; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 26px; display: grid; gap: 10px; align-content: start; position: relative; overflow: hidden; min-height: 230px; transition: border-color .3s, transform .4s var(--ease); }
+.tile.w3 { grid-column: span 3; } .tile.w4 { grid-column: span 4; }
+.tile::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(420px circle at var(--x, -100px) var(--y, -100px), rgba(91,108,255,.13), transparent 45%); }
+.tile:hover { border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); transform: translateY(-3px); }
+.tile h3 { font-size: 19px; letter-spacing: -0.02em; }
+.tile p { color: var(--ink-2); font-size: 15px; max-width: 46ch; }
+.tile .viz { margin-top: auto; padding-top: 14px; }
+.formula { font-family: var(--f-mono); font-size: 15px; display: grid; gap: 6px; }
+.formula span { padding: 8px 12px; border-radius: 8px; background: var(--bg-2); width: fit-content; }
+.formula em { font-style: normal; color: var(--accent); }
+.critics-viz { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.critics-viz i { font-style: normal; font-size: 13px; padding: 8px 12px; border-radius: 10px; border: 1px dashed var(--line); background: var(--bg-2); }
+.critics-viz .wall { width: 1px; height: 28px; background: var(--line); }
+.runs { display: grid; gap: 8px; }
+.runs div { display: grid; grid-template-columns: 52px minmax(0, 1fr) 46px; gap: 10px; align-items: center; font-size: 13px; color: var(--ink-3); }
+.runs div b { height: 8px; border-radius: 4px; background: var(--accent); transform-origin: left; transform: scaleX(var(--w)); transition: transform 1s var(--ease); }
+.js .tile:not(.in) .runs b { transform: scaleX(0); }
+.runs div span:last-child { font-family: var(--f-mono); color: var(--ink); text-align: right; }
+
+/* Proof */
+.caught { border-top: 1px solid var(--line); margin: 0; padding: 0; }
+.caught li { list-style: none; display: grid; grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1fr); gap: 20px; padding: 22px 0; border-bottom: 1px solid var(--line); align-items: baseline; transition: background .2s, padding .3s var(--ease); }
+.caught li:hover { background: var(--bg-2); padding-inline: 12px; }
+.caught .k { font-family: var(--f-mono); color: var(--ink-3); font-size: 13px; }
+.caught .trap { font-size: 17.5px; font-weight: 500; }
+.caught .res { color: var(--ink-2); font-size: 15px; display: flex; gap: 10px; align-items: baseline; }
+.caught .res::before { content: "✓"; color: var(--good); font-weight: 700; }
+.bigstat { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 56px; }
+.bigstat div { display: grid; gap: 6px; padding: 26px; border-radius: var(--r); background: var(--bg-2); }
+.bigstat b { font-family: var(--f-mono); font-weight: 500; font-size: clamp(36px, 4.6vw, 58px); letter-spacing: -0.04em; line-height: 1; }
+.bigstat .hl { background: var(--ink); color: var(--bg); }
+.bigstat .hl span { color: color-mix(in srgb, var(--bg) 70%, var(--ink)); }
+.bigstat span { color: var(--ink-2); font-size: 14.5px; }
+
+/* CTA */
+.cta { position: relative; background: var(--night); color: var(--night-ink); overflow: hidden; isolation: isolate; text-align: center; }
+.cta::before { content: ""; position: absolute; inset: 0; z-index: -1; background: radial-gradient(700px 360px at 50% 100%, rgba(67,83,255,.35), transparent 70%); }
+.cta-in { display: grid; justify-items: center; gap: 24px; padding-block: clamp(80px, 11vw, 150px); }
+.cta h2 { font-size: clamp(36px, 5.6vw, 72px); letter-spacing: -0.05em; line-height: 1; max-width: 14ch; }
+.cta p { color: var(--night-ink-2); font-size: 17px; }
+.foot { padding-block: 28px 44px; color: var(--ink-3); font-size: 13.5px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; border-top: 1px solid var(--line); }
+footer.dark { background: var(--night); }
+footer.dark .foot { color: var(--night-ink-2); border-top-color: var(--night-line); }
+
+/* ===== Demo view ===== */
+.app { padding-block: 112px 96px; display: grid; gap: 28px; }
+.app-h { display: flex; justify-content: space-between; align-items: end; gap: 16px; flex-wrap: wrap; }
+.app-h h1 { font-size: clamp(30px, 4vw, 42px); letter-spacing: -0.04em; line-height: 1.1; }
+.app-h p { color: var(--ink-2); margin-top: 8px; max-width: 56ch; }
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: clamp(18px, 3vw, 28px); display: grid; gap: 18px; min-width: 0; }
+.panel-h { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.panel-h h2 { font-size: 20px; letter-spacing: -0.02em; }
+.collapsible { display: grid; gap: 18px; }
+#inputs.collapsed .collapsible { display: none; }
+.fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+label.f { display: grid; gap: 6px; font-size: 12.5px; font-weight: 500; color: var(--ink-2); }
+input, select, textarea { font: 15px/1.5 var(--f-sans); color: var(--ink); background: var(--bg-2); border: 1px solid transparent; border-radius: var(--r-sm); padding: 10px 12px; width: 100%; min-width: 0; transition: border-color .15s, background .15s; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); background: var(--card); }
+input.num-in { font-family: var(--f-mono); }
+textarea { font-family: var(--f-mono); font-size: 13.5px; min-height: 240px; resize: vertical; }
+.tabs { display: flex; gap: 4px; overflow-x: auto; padding: 4px; background: var(--bg-2); border-radius: 999px; width: fit-content; max-width: 100%; }
+.tab { background: none; border: 0; padding: 7px 14px; color: var(--ink-2); cursor: pointer; white-space: nowrap; font-size: 14px; border-radius: 999px; }
+.tab[aria-selected="true"] { color: var(--ink); background: var(--card); box-shadow: 0 1px 2px rgba(12,14,19,.08); font-weight: 500; }
+.pane-note { font-size: 13px; color: var(--ink-3); margin: 12px 0 8px; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.spacer { flex: 1; }
+.status { font-size: 14.5px; color: var(--ink-2); display: flex; align-items: center; gap: 10px; }
+.status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex: none; animation: blink 1.2s ease-in-out infinite; }
+.status.ok { color: var(--good); } .status.ok::before { background: var(--good); animation: none; }
+.status.bad { color: var(--bad); } .status.bad::before { background: var(--bad); animation: none; }
+
+/* Pipeline */
+.pipe { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+.stage-col { display: grid; gap: 10px; align-content: start; min-width: 0; }
+.critics { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.st { border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: var(--card); display: grid; gap: 2px; min-width: 0; transition: border-color .3s, box-shadow .3s, background .3s; }
+.st .st-name { font-weight: 600; font-size: 14.5px; }
+.st .st-q { font-size: 13px; color: var(--ink-3); }
+.st .st-state { font-family: var(--f-mono); font-size: 12px; color: var(--ink-3); margin-top: 8px; font-variant-numeric: tabular-nums; }
+.st .st-err { font-size: 13px; color: var(--bad); }
+.st .st-retry { justify-self: start; margin-top: 6px; }
+.st[data-state="running"] { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+.st[data-state="running"] .st-state { color: var(--accent); }
+.st[data-state="running"] .st-state::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); margin-right: 7px; animation: blink 1s ease-in-out infinite; vertical-align: 1px; }
+.st[data-state="done"] { background: var(--bg-2); border-color: transparent; }
+.st[data-state="done"] .st-state { color: var(--good); }
+.st[data-state="failed"], .st[data-state="stopped"] { border-color: var(--bad); }
+
+/* Memo */
+#memo:empty { display: none; }
+#memo, .panel { scroll-margin-top: 84px; }
+.memo { display: grid; gap: 28px; }
+.memo-head { display: grid; gap: 16px; }
+.memo-meta { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.decision-row { display: flex; align-items: center; gap: 14px 28px; flex-wrap: wrap; }
+.pill { font-size: clamp(24px, 3vw, 30px); font-weight: 600; letter-spacing: -0.03em; padding: 4px 16px; border-radius: 999px; }
+.pill.good { background: var(--good-bg); color: var(--good); } .pill.warn { background: var(--warn-bg); color: var(--warn); } .pill.bad { background: var(--bad-bg); color: var(--bad); } .pill.muted { background: var(--muted-bg); }
+.conv { display: flex; align-items: center; gap: 10px; }
+.conv-label { font-size: 13px; color: var(--ink-3); }
+.conv-bar { display: flex; gap: 3px; }
+.conv-bar i { width: 10px; height: 20px; border-radius: 3px; background: var(--muted-bg); }
+.conv-bar i.on.good { background: var(--good); } .conv-bar i.on.warn { background: var(--warn); } .conv-bar i.on.bad { background: var(--bad); } .conv-bar i.on.muted { background: var(--ink-2); }
+.conv-num { font-family: var(--f-mono); font-weight: 500; }
+.summary { font-size: clamp(19px, 2.2vw, 23px); line-height: 1.4; letter-spacing: -0.015em; max-width: 60ch; }
+.reasoning { color: var(--ink-2); max-width: 68ch; }
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.kpi { padding: 16px; display: grid; gap: 2px; border-radius: 12px; background: var(--bg-2); min-width: 0; }
+.kpi-l { font-size: 12.5px; color: var(--ink-3); }
+.kpi-v { font-family: var(--f-mono); font-size: clamp(20px, 2.4vw, 26px); font-weight: 500; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.kpi.hero { background: var(--ink); color: var(--bg); }
+.kpi.hero .kpi-l, .kpi.hero .kpi-s { color: color-mix(in srgb, var(--bg) 70%, var(--ink)); }
+.kpi-s { font-size: 12.5px; color: var(--ink-3); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 28px 40px; }
+.msec { display: grid; gap: 10px; align-content: start; min-width: 0; }
+.msec h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .12em; color: var(--ink-3); font-weight: 500; }
+.keyq { font-size: 18px; line-height: 1.45; letter-spacing: -0.01em; }
+.mlist { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.mlist li { padding-left: 18px; position: relative; }
+.mlist li::before { content: ""; position: absolute; left: 0; top: .7em; width: 6px; height: 6px; border-radius: 50%; background: var(--ink-3); }
+.mlist s { color: var(--ink-3); }
+.src { color: var(--ink-3); font-size: 13px; }
+.memo-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding-top: 18px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-3); }
+.memo-foot span { max-width: 62ch; }
+
+/* Tables */
+.tblwrap { overflow-x: auto; }
+.tbl { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+.tbl th { text-align: left; font-size: 12.5px; color: var(--ink-3); font-weight: 500; padding: 10px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.tbl td { padding: 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.tbl tfoot td { border-bottom: 0; font-weight: 600; }
+.tbl .r { text-align: right; }
+.tbl .num { white-space: nowrap; }
+.badtxt { color: var(--bad); }
+input.prob { width: 72px; text-align: right; font-family: var(--f-mono); padding: 6px 8px; }
+.dots { display: inline-flex; gap: 4px; }
+.dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted-bg); }
+.dots i.on { background: var(--accent); }
+.chip { display: inline-block; font-size: 12px; font-weight: 500; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+.chip.good { background: var(--good-bg); color: var(--good); } .chip.warn { background: var(--warn-bg); color: var(--warn); } .chip.bad { background: var(--bad-bg); color: var(--bad); } .chip.muted { background: var(--muted-bg); color: var(--ink-2); }
+.warn-line { color: var(--bad); background: var(--bad-bg); padding: 10px 14px; border-radius: var(--r-sm); font-size: 14px; }
+.driver { padding: 14px 16px; background: var(--accent-soft); border-radius: var(--r-sm); font-size: 15px; }
+#scen > div { display: grid; gap: 14px; }
+#scen > div > .btn { justify-self: start; }
+
+/* Agent outputs */
+.raw { border-top: 1px solid var(--line); padding: 14px 0; }
+.raw > summary { cursor: pointer; }
+.av { display: grid; gap: 10px; padding: 14px 0 4px; }
+.item { display: grid; gap: 4px; padding: 14px; background: var(--bg-2); border-radius: 10px; }
+.item-h { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+details.json summary { cursor: pointer; font-size: 13px; color: var(--ink-3); }
+details.json pre { font: 12px/1.55 var(--f-mono); background: var(--bg-2); padding: 14px; border-radius: 10px; overflow-x: auto; max-height: 360px; }
+
+.view { animation: viewin .45s ease both; }
+@keyframes viewin { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+
+@media (max-width: 960px) {
+  .split { grid-template-columns: minmax(0, 1fr); }
+  .bento { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tile, .tile.w3, .tile.w4 { grid-column: span 2; }
+  .steps { grid-template-columns: minmax(0, 1fr); }
+  .step { border-left: 0; border-top: 1px solid var(--line); }
+  .step:first-child { border-top: 0; }
+  .pipe { grid-template-columns: minmax(0, 1fr); }
+  .kpis { grid-template-columns: 1fr 1fr; }
+  .grid2 { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  .nav-links a.lnk { display: none; }
+  .fields { grid-template-columns: 1fr 1fr; }
+  .critics { grid-template-columns: minmax(0, 1fr); }
+  .caught li { grid-template-columns: 28px minmax(0, 1fr); gap: 6px 12px; }
+  .caught .res { grid-column: 2; }
+  .bigstat { grid-template-columns: minmax(0, 1fr); }
+  .hint { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001s !important; animation-delay: 0s !important; transition: none !important; }
+  .marquee-track { animation: none; }
+}
+</style>
+
+<nav class="nav gutter over" id="nav">
+  <div class="container nav-in">
+    <a class="brand" href="#home" aria-label="Quorum home"><span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>Quorum</a>
+    <div class="nav-links">
+      <a class="lnk" href="#committee">Product</a>
+      <a class="lnk" href="#how">How it works</a>
+      <a class="lnk" href="#proof">Results</a>
+      <a class="btn primary sm magnetic" href="#demo">Try the demo</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ===================== HOME ===================== -->
+<div id="view-home">
+  <header class="lhero gutter" id="hero">
+    <canvas id="fx" aria-hidden="true"></canvas>
+    <div class="container hero-in">
+      <span class="chip-top rise"><b>New</b>Six AI agents. One investment committee.</span>
+      <h1 class="rise d1">Every pitch deserves a <span class="grad">skeptic.</span></h1>
+      <p class="lede rise d2">Quorum cross-examines a stock pitch before any money goes in. It checks the numbers, argues the other side, re-prices the trade, and hands back a one-page decision.</p>
+      <div class="ctas rise d3">
+        <a class="btn light lg magnetic" href="#demo">Run the demo <span class="arr">→</span></a>
+        <a class="btn glass lg magnetic" href="#how">How it works</a>
+      </div>
+      <div class="num-slot" id="numSlot" aria-hidden="true"></div>
+      <div class="num-cap rise d4" aria-live="polite">
+        <p class="cap" id="numCap"><b>Pitched return</b> · Expedia long, as the analyst wrote it</p>
+        <span class="hint" id="hint"><kbd>move</kbd> to push the numbers <kbd>click</kbd> to cross-examine</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="marquee" aria-label="Built for">
+    <div class="marquee-track">
+      <span>Built for small hedge funds</span><span>Family offices</span><span>Solo portfolio managers</span><span>Student investment clubs</span><span>Equity research teams</span><span>Investment committees of one</span>
+      <span>Built for small hedge funds</span><span>Family offices</span><span>Solo portfolio managers</span><span>Student investment clubs</span><span>Equity research teams</span><span>Investment committees of one</span>
+    </div>
+  </div>
+
+  <section class="sec gutter" id="committee">
+    <div class="container split">
+      <div class="sec-h reveal">
+        <span class="eyebrow">The product</span>
+        <h2>A full committee, in about three minutes.</h2>
+        <p>Big funds put every idea in front of a committee before it gets capital. Most small funds can't. Quorum gives every analyst that second look.</p>
+        <ul class="ticks">
+          <li><span><b>Catches wrong numbers</b> by checking every claim against the filings.</span></li>
+          <li><span><b>Argues the other side</b> so confirmation bias has nowhere to hide.</span></li>
+          <li><span><b>Re-prices the trade</b> with bear, base and bull cases computed in code.</span></li>
+        </ul>
+      </div>
+      <div class="tilt reveal">
+        <div class="cc" id="cc" aria-label="Animated example: the committee reviewing an Expedia pitch">
+          <div class="cc-top">
+            <span class="cc-tick">EXPE<small>Long · target $357.50</small></span>
+            <span class="live"><i></i>In committee</span>
+          </div>
+          <div class="cc-rows">
+            <div class="cc-row" style="--d:.4s"><span class="dot"></span><span><span class="who">Fact-Checker</span><span class="what">Revenue grew 14.1%, not 16%</span></span><span class="chip bad">Mismatch</span></div>
+            <div class="cc-row" style="--d:1.1s"><span class="dot"></span><span><span class="who">Skeptic</span><span class="what">B2B margins are falling, not rising</span></span><span class="chip bad">Breaks</span></div>
+            <div class="cc-row" style="--d:1.8s"><span class="dot"></span><span><span class="who">Other Side</span><span class="what">Re-rating mostly done after +62%</span></span><span class="chip warn">Moderate</span></div>
+            <div class="cc-row" style="--d:2.5s"><span class="dot"></span><span><span class="who">Macro</span><span class="what">Consumer travel is normalizing</span></span><span class="chip warn">Headwind</span></div>
+            <div class="cc-row" style="--d:3.4s"><span class="dot"></span><span><span class="who">Scenario</span><span class="what">3 cases · expected $303.68</span></span><span class="chip muted">Re-priced</span></div>
+            <div class="cc-row" style="--d:4.3s"><span class="dot"></span><span><span class="who">Portfolio Manager</span><span class="what">Conviction 4 / 10</span></span><span class="chip muted">Memo</span></div>
+          </div>
+          <div class="cc-foot">
+            <div style="display:grid;gap:6px">
+              <span class="lbl">Expected return</span>
+              <span class="cc-now" id="ccNum">+23.7%</span>
+              <span class="fine">Pitched <span class="cc-was">+23.7%</span></span>
+            </div>
+            <span class="cc-dec">Revise and resubmit</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec alt gutter" id="how">
+    <div class="container">
+      <div class="sec-h reveal">
+        <span class="eyebrow">How it works</span>
+        <h2>Cross-examine. Re-price. Decide.</h2>
+        <p>Each agent is the same AI with a different job. The script passes work between them; they never talk to each other directly.</p>
+      </div>
+      <div class="steps reveal" id="steps">
+        <div class="step"><span class="bar"></span><span class="n">01 · Parallel</span><h3>Cross-examine</h3><p>Four critics read the pitch, filings and call notes at the same time, blind to each other, so no one anchors on the first opinion.</p><div class="who"><span class="tag">Fact-Checker</span><span class="tag">Skeptic</span><span class="tag">Other Side</span><span class="tag">Macro</span></div></div>
+        <div class="step"><span class="bar"></span><span class="n">02 · Re-price</span><h3>Re-price</h3><p>The Scenario agent rebuilds the model as bear, base and bull cases. It picks EPS, multiples and odds; code computes every price.</p><div class="who"><span class="tag">Scenario</span><span class="tag">Calculator</span></div></div>
+        <div class="step"><span class="bar"></span><span class="n">03 · Decide</span><h3>Decide</h3><p>The Portfolio Manager re-checks the critics against the filings, then writes the memo: decision, conviction and kill criteria.</p><div class="who"><span class="tag">Portfolio Manager</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec gutter" id="features">
+    <div class="container">
+      <div class="sec-h reveal">
+        <span class="eyebrow">Why trust it</span>
+        <h2>Built so the AI can't fool you.</h2>
+        <p>Language models are confident and sometimes wrong. Every design choice in Quorum assumes that.</p>
+      </div>
+      <div class="bento">
+        <div class="tile w4 spot reveal"><h3>Blind critics</h3><p>The four critics run in parallel and never see each other's answers, so you get independent views instead of an echo.</p>
+          <div class="viz critics-viz"><i>Fact-Checker</i><span class="wall"></span><i>Skeptic</i><span class="wall"></span><i>Other Side</i><span class="wall"></span><i>Macro</i></div></div>
+        <div class="tile spot reveal"><h3>Code does the math</h3><p>The AI picks assumptions. Code computes every price.</p>
+          <div class="viz formula"><span>price = <em>EPS</em> × <em>P/E</em></span><span>E[p] = Σ price × prob</span></div></div>
+        <div class="tile spot reveal"><h3>Shows its work</h3><p>Every finding comes with the arithmetic behind it.</p>
+          <div class="viz formula"><span>4,118 ÷ 3,609 − 1</span><span>= <em>14.1%</em>, not 16%</span></div></div>
+        <div class="tile spot reveal"><h3>Kill criteria</h3><p>Every memo says exactly what would make you exit.</p>
+          <div class="viz formula"><span>B2B margin &lt; 30% · 2 qtrs</span><span>Revenue growth &lt; 8%</span></div></div>
+        <div class="tile w3 spot reveal"><h3>Consistency test</h3><p>AI answers vary. Run a pitch three times and trust only what repeats.</p>
+          <div class="viz runs"><div><span>Run 1</span><b style="--w:.22"></b><span>+5.1%</span></div><div><span>Run 2</span><b style="--w:.19"></b><span>+4.6%</span></div><div><span>Run 3</span><b style="--w:.24"></b><span>+5.6%</span></div></div></div>
+        <div class="tile w3 spot reveal"><h3>A human signs off</h3><p>Errors can travel down a chain of agents. Quorum flags disagreements and open questions so a person makes the final call.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec alt gutter" id="proof">
+    <div class="container">
+      <div class="sec-h reveal">
+        <span class="eyebrow">Tested on a planted pitch</span>
+        <h2>Five traps. Five caught.</h2>
+        <p>We hid five problems in a hypothetical Expedia long and ran it through the committee.</p>
+      </div>
+      <ul class="caught reveal">
+        <li><span class="k">01</span><span class="trap">Revenue growth stated as 16%</span><span class="res">Fact-Checker found 14.1%. The 16% was bookings.</span></li>
+        <li><span class="k">02</span><span class="trap">"Marketing grew 1%" vs. 10% in the filing</span><span class="res">Flagged as a definition to reconcile.</span></li>
+        <li><span class="k">03</span><span class="trap">No peer multiples or short interest</span><span class="res">Agents said they couldn't judge instead of guessing.</span></li>
+        <li><span class="k">04</span><span class="trap">B2B margins under pressure</span><span class="res">The Skeptic's top objection and the PM's key question.</span></li>
+        <li><span class="k">05</span><span class="trap">A $227M one-time gain in earnings</span><span class="res">Caught by the Skeptic.</span></li>
+      </ul>
+      <div class="bigstat reveal">
+        <div><b class="count" data-to="23.7" data-fmt="pct">+23.7%</b><span>Return the analyst pitched</span></div>
+        <div class="hl"><b class="count" data-to="5.1" data-fmt="pct">+5.1%</b><span>Probability-weighted return after review</span></div>
+        <div><b class="count" data-to="4" data-fmt="ten">4/10</b><span>Conviction · revise and resubmit</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta gutter">
+    <div class="container cta-in">
+      <span class="chip-top"><b>Live</b>Takes 23 seconds</span>
+      <h2>See it argue with a pitch.</h2>
+      <p>Pre-loaded with the Expedia example. Press run and watch the committee work.</p>
+      <a class="btn light lg magnetic" href="#demo">Run the demo <span class="arr">→</span></a>
+    </div>
+  </section>
+  <footer class="dark gutter"><div class="container foot"><span>Quorum · AI Use Case Deep Dive · NYU Stern</span><span>Class prototype. Not investment advice.</span></div></footer>
+</div>
+
+<!-- ===================== DEMO ===================== -->
+<div id="view-demo" class="view gutter" hidden>
+  <main class="narrow app">
+    <div class="app-h">
+      <div>
+        <span class="eyebrow">Demo</span>
+        <h1 style="margin-top:10px">Put a pitch in committee.</h1>
+        <p>Pre-filled with a hypothetical Expedia long that has five planted problems. Press run and watch the committee work.</p>
+      </div>
+    </div>
+
+    <section class="panel" id="inputs" aria-label="Pitch inputs">
+      <div class="panel-h">
+        <h2>The pitch</h2>
+        <div class="actions">
+          <button class="btn ghost sm" id="restore" type="button">Reset example</button>
+          <button class="btn ghost sm" id="toggleInputs" type="button" aria-expanded="true" aria-controls="inputs">Hide inputs</button>
+        </div>
+      </div>
+      <div class="collapsible">
+        <div class="fields">
+          <label class="f" for="ticker">Ticker<input id="ticker" autocomplete="off"></label>
+          <label class="f" for="direction">Direction<select id="direction"><option value="long">Long</option><option value="short">Short</option></select></label>
+          <label class="f" for="price">Price ($)<input id="price" class="num-in" inputmode="decimal"></label>
+          <label class="f" for="target">Target ($)<input id="target" class="num-in" inputmode="decimal"></label>
+        </div>
+        <div>
+          <div class="tabs" role="tablist">
+            <button class="tab" role="tab" id="tab-thesis" aria-controls="pane-thesis" type="button">Thesis</button>
+            <button class="tab" role="tab" id="tab-model" aria-controls="pane-model" type="button">Model</button>
+            <button class="tab" role="tab" id="tab-filings" aria-controls="pane-filings" type="button">Filings</button>
+            <button class="tab" role="tab" id="tab-calls" aria-controls="pane-calls" type="button">Call notes</button>
+            <button class="tab" role="tab" id="tab-market" aria-controls="pane-market" type="button">Market</button>
+            <button class="tab" role="tab" id="tab-macro" aria-controls="pane-macro" type="button">Macro</button>
+          </div>
+          <div id="pane-thesis" role="tabpanel"><p class="pane-note">The analyst's pitch and pillars. Every agent reads this.</p><textarea id="thesis" aria-label="Thesis"></textarea></div>
+          <div id="pane-model" role="tabpanel" hidden><p class="pane-note">Valuation model. Read by Scenario and the PM.</p><textarea id="model" aria-label="Model"></textarea></div>
+          <div id="pane-filings" role="tabpanel" hidden><p class="pane-note">10-Q excerpts. Read by Fact-Checker, Skeptic, Macro and the PM.</p><textarea id="filings" aria-label="Filings"></textarea></div>
+          <div id="pane-calls" role="tabpanel" hidden><p class="pane-note">Earnings call notes. Read by Fact-Checker, Skeptic and Other Side.</p><textarea id="calls" aria-label="Call notes"></textarea></div>
+          <div id="pane-market" role="tabpanel" hidden><p class="pane-note">Price, multiples, positioning. Read by Other Side and Scenario.</p><textarea id="market" aria-label="Market data"></textarea></div>
+          <div id="pane-macro" role="tabpanel" hidden><p class="pane-note">Macro and industry context. Read by Macro.</p><textarea id="macro" aria-label="Macro"></textarea></div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn primary lg" id="run" type="button">Run committee <span class="arr">→</span></button>
+        <button class="btn" id="run3" type="button" hidden>Run 3×</button>
+        <button class="btn" id="demo" type="button" hidden>Replay</button>
+        <button class="btn danger" id="stop" type="button" hidden>Stop</button>
+        <span class="spacer"></span>
+        <p class="status" id="status" role="status" hidden></p>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="Committee pipeline">
+      <div class="pipe">
+        <div class="stage-col">
+          <span class="eyebrow">1 · Cross-examine</span>
+          <div class="critics">
+            <div class="st" id="st-fact" data-state="waiting"><span class="st-name">Fact-Checker</span><span class="st-q">Are the numbers right?</span><span class="st-state">Waiting</span><span class="st-err" hidden></span><button class="btn sm st-retry" type="button" hidden>Retry</button></div>
+            <div class="st" id="st-skeptic" data-state="waiting"><span class="st-name">Skeptic</span><span class="st-q">Why is this wrong?</span><span class="st-state">Waiting</span><span class="st-err" hidden></span><button class="btn sm st-retry" type="button" hidden>Retry</button></div>
+            <div class="st" id="st-other" data-state="waiting"><span class="st-name">Other Side</span><span class="st-q">What's the opposite trade?</span><span class="st-state">Waiting</span><span class="st-err" hidden></span><button class="btn sm st-retry" type="button" hidden>Retry</button></div>
+            <div class="st" id="st-macro" data-state="waiting"><span class="st-name">Macro</span><span class="st-q">What could the cycle do?</span><span class="st-state">Waiting</span><span class="st-err" hidden></span><button class="btn sm st-retry" type="button" hidden>Retry</button></div>
+          </div>
+        </div>
+        <div class="stage-col">
+          <span class="eyebrow">2 · Re-price</span>
+          <div class="st" id="st-scenario" data-state="waiting"><span class="st-name">Scenario</span><span class="st-q">What is it really worth?</span><span class="st-state">Waiting</span><span class="st-err" hidden></span><button class="btn sm st-retry" type="button" hidden>Retry</button></div>
+        </div>
+        <div class="stage-col">
+          <span class="eyebrow">3 · Decide</span>
+          <div class="st" id="st-pm" data-state="waiting"><span class="st-name">Portfolio Manager</span><span class="st-q">Do we invest?</span><span class="st-state">Waiting</span><span class="st-err" hidden></span><button class="btn sm st-retry" type="button" hidden>Retry</button></div>
+        </div>
+      </div>
+    </section>
+
+    <div id="results" style="display:grid;gap:28px" hidden>
+      <section class="panel" aria-label="Memo"><div id="memo"></div></section>
+      <section class="panel" aria-label="Scenarios">
+        <div class="panel-h"><h2>Scenario valuation</h2><span class="fine">Computed in code. Edit a probability to see the return move.</span></div>
+        <div id="scen"></div>
+      </section>
+      <section class="panel" id="consist" hidden></section>
+      <section class="panel" aria-label="Agent outputs">
+        <div class="panel-h"><h2>Agent reasoning</h2><span class="fine">Open any agent to see its work</span></div>
+        <div id="rawwrap"></div>
+      </section>
+      <p class="fine" id="demoBanner" hidden>Demo mode: agent outputs are pre-recorded for this example. Scenario prices, expected return and probability edits are computed live in code.</p>
+    </div>
+  </main>
+  <footer class="gutter"><div class="narrow foot"><span>Quorum · AI Use Case Deep Dive · NYU Stern</span><span>Class prototype. Not investment advice.</span></div></footer>
+</div>
+
+<script>
+/* ===== Scenario calculator (Jamie) =====
+   The AI picks the assumptions; this code does all the arithmetic.
+   Pure function: no DOM, no globals. Same function powers the memo,
+   the scenario table and the probability overrides. */
+function toNum(v) {
+  if (typeof v === "number") return v;
+  if (typeof v === "string") {
+    const n = parseFloat(v.replace(/[$,%x\s]/gi, ""));
+    return Number.isFinite(n) ? n : NaN;
+  }
+  return NaN;
+}
+
+function impliedPrice(s) {
+  const method = String(s.method || "pe").toLowerCase().replace(/[^a-z_]/g, "");
+  if (method === "ev_ebitda" || method === "evebitda") {
+    // (EBITDA x multiple - net debt) / shares
+    const v = (toNum(s.ebitda) * toNum(s.multiple) - toNum(s.net_debt || 0)) / toNum(s.shares);
+    return { method: "ev_ebitda", price: v };
+  }
+  return { method: "pe", price: toNum(s.eps) * toNum(s.multiple) };
+}
+
+/**
+ * @param {Array} scenarios  [{name, eps, multiple, probability, stated_price?, method?}]
+ * @param {Object} o         {price, target, direction: "long"|"short", statedExpected?, overrides?}
+ */
+function computeScenarios(scenarios, o) {
+  o = o || {};
+  const list = Array.isArray(scenarios) ? scenarios : [];
+  const warnings = [];
+  const direction = String(o.direction || "long").toLowerCase() === "short" ? "short" : "long";
+  const price = toNum(o.price);
+  const target = toNum(o.target);
+
+  let probs = list.map((s, i) =>
+    o.overrides && o.overrides[i] != null && o.overrides[i] !== "" ? toNum(o.overrides[i]) : toNum(s.probability));
+  // Accept 0.25-style fractions if they clearly sum to 1
+  const rawSum = probs.reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0);
+  if (probs.length && probs.every(p => Number.isFinite(p) && p <= 1) && Math.abs(rawSum - 1) <= 0.005) {
+    probs = probs.map(p => p * 100);
+  }
+
+  const rows = list.map((s, i) => {
+    const ip = impliedPrice(s);
+    const stated = toNum(s.stated_price != null ? s.stated_price : s.price);
+    const hasStated = Number.isFinite(stated);
+    const diffPct = hasStated && Number.isFinite(ip.price) && ip.price !== 0 ? (stated - ip.price) / ip.price : null;
+    if (!Number.isFinite(ip.price)) warnings.push(`"${s.name || "Scenario " + (i + 1)}" is missing a number needed for its price.`);
+    return {
+      name: s.name || "Scenario " + (i + 1),
+      method: ip.method,
+      eps: toNum(s.eps), multiple: toNum(s.multiple),
+      implied: ip.price,
+      probability: probs[i],
+      stated: hasStated ? stated : null,
+      diffPct,
+      corrected: diffPct != null && Math.abs(diffPct) > 0.01,
+    };
+  });
+
+  const probSum = probs.reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0);
+  const probsOk = probs.length > 0 && probs.every(p => Number.isFinite(p) && p >= 0);
+  if (!probsOk) warnings.push("Every scenario needs a probability of 0 or more.");
+  const sumOk = Math.abs(probSum - 100) <= 0.5;
+  if (probsOk && !sumOk) warnings.push(`Probabilities add up to ${round(probSum, 1)}%, not 100%. Expected price not computed.`);
+  if (!Number.isFinite(price) || price <= 0) warnings.push("Current price is missing.");
+
+  const valid = rows.length > 0 && probsOk && sumOk && rows.every(r => Number.isFinite(r.implied));
+  let expectedPrice = null, expectedReturn = null, gapToTarget = null, targetReturn = null;
+  if (valid) {
+    expectedPrice = rows.reduce((a, r) => a + r.implied * r.probability / 100, 0);
+    if (Number.isFinite(price) && price > 0) {
+      const raw = expectedPrice / price - 1;
+      expectedReturn = direction === "short" ? -raw : raw;
+      if (Number.isFinite(target)) {
+        const tr = target / price - 1;
+        targetReturn = direction === "short" ? -tr : tr;
+      }
+    }
+    if (Number.isFinite(target)) gapToTarget = target - expectedPrice;
+  }
+
+  const statedExpected = toNum(o.statedExpected);
+  let expectedCheck = null;
+  if (valid && Number.isFinite(statedExpected)) {
+    const d = (statedExpected - expectedPrice) / expectedPrice;
+    expectedCheck = { stated: statedExpected, diffPct: d, corrected: Math.abs(d) > 0.01 };
+  }
+  const corrections = rows.filter(r => r.corrected).length + (expectedCheck && expectedCheck.corrected ? 1 : 0);
+
+  return { rows, probSum, valid, direction, price, target, expectedPrice, expectedReturn,
+           targetReturn, gapToTarget, expectedCheck, corrections, warnings };
+}
+
+function round(x, d) { const m = Math.pow(10, d || 0); return Math.round(x * m) / m; }
+
+
+
+/* ===== Example pitch: hypothetical Expedia long with 5 planted traps =====
+   All figures are illustrative test data, not real company results. */
+const EX = {
+  ticker: "EXPE",
+  direction: "long",
+  price: "288.95",
+  target: "357.50",
+  thesis: `LONG EXPE (Expedia Group). 12-month target $357.50 (+24%).
+
+Pillar 1 - B2C re-acceleration: consolidating Hotels.com and Vrbo onto one app and loyalty program is driving marketing leverage. Revenue grew 16% year over year last quarter, and management said marketing spend grew only about 1%.
+Pillar 2 - B2B is the growth engine: Expedia Partner Solutions (white-label travel for banks and airlines) is growing 20%+ with expanding margins.
+Pillar 3 - Capital return: buybacks are shrinking the share count about 6% a year, which compounds EPS growth.
+Pillar 4 - Valuation: about 11.5x FY2027 EPS, cheap versus its own history and the market.
+
+Main risk: a consumer travel slowdown. Earnings quality is clean: Q3 net income beat consensus.`,
+  model: `Valuation method: P/E on FY2027E EPS.
+Current price: $288.95
+
+               FY2025A   FY2026E   FY2027E
+Revenue ($B)     14.6      16.3      18.1
+Growth            8%       12%       11%
+S&M % revenue    49.0%     48.0%     47.0%
+Adj. EBITDA mgn  21.5%     22.5%     23.5%
+Diluted shares    133M      125M      118M
+EPS ($)          19.40     23.60     27.50
+
+Target multiple: 13.0x FY2027E EPS
+Target price: 27.50 x 13.0 = $357.50 (+23.7%)
+
+Key assumptions: double-digit revenue growth both years; 100bp/yr S&M leverage; B2B EBITDA margin expands from 33% to 35%; buybacks of ~$3B/yr.`,
+  filings: `Q3 10-Q excerpts (hypothetical):
+- Revenue: $4,118M vs $3,609M in Q3 prior year (+14.1%).
+- Gross bookings: $27.2B vs $23.5B (+15.7%).
+- Selling and marketing expense: $2,052M vs $1,862M (+10.2%).
+  - of which direct (performance) marketing: $1,401M vs $1,388M (+0.9%).
+  - of which indirect marketing and personnel: $651M vs $474M (+37.3%).
+- B2B segment revenue: $1,190M (+24%). B2B segment adjusted EBITDA margin: 31.0% vs 33.5% prior year.
+- Other income, net: $241M vs $9M. Includes a $227M one-time gain on the sale of a minority investment.
+- Net income attributable: $812M vs $545M.
+- Diluted weighted-average shares: 131.2M vs 139.0M.
+- Share repurchases in the quarter: $780M.`,
+  calls: `Q3 earnings call notes:
+- CEO: "Gross bookings grew 16%, our best quarter in two years."
+- CFO: "Marketing grew roughly 1% in the quarter while bookings grew 16%. That is the leverage story."
+- CFO: "We expect B2B margins to see some pressure over the next few quarters as we onboard several large partners."
+- CEO: "Our one-app strategy is done. Loyalty members now book 2x more often than non-members."
+- CFO: "We remain committed to returning excess cash through buybacks."
+- Analyst Q&A: management declined to give FY2027 margin guidance.`,
+  market: `Price: $288.95. 52-week range: $160 - $305.
+Market cap: about $38B. Net debt: about $2.5B.
+Consensus FY2027 EPS: $25.10. Forward P/E on consensus FY2027: 11.5x.
+5-year average forward P/E: 14x (range 9x - 22x).
+Stock is up 62% over the past 12 months.
+Peer multiples (Booking, Airbnb, Trip.com): not provided.
+Short interest: not provided.`,
+  macro: `US consumer travel spending growing mid-single digits; leisure demand normalizing after two strong years.
+Airfares deflating about 3% year over year; hotel ADRs flat.
+Strong US dollar is a headwind for international bookings.
+Consumer sentiment softening; unemployment edging up from lows.
+Fed funds rate still restrictive; first cuts expected next year.
+Google is testing AI trip-planning features in search results.`,
+};
+
+/* ===== Saved sample run, replayed by "Replay sample run" =====
+   Illustrative outputs written to match the team's first Expedia run
+   (all 5 traps caught, revise and resubmit, conviction 4/10). Replace
+   with the real JSON from that run if you have it. */
+const DEMO = {
+  fact: {
+    checks: [
+      { claim: "Revenue grew 16% year over year last quarter", source_figure: "10-Q: revenue $4,118M vs $3,609M", working: "4,118 / 3,609 - 1 = 14.1%. The 16% figure matches gross bookings (+15.7%), not revenue.", status: "mismatch", impact: "Overstates top-line growth by about 2 points; the model's 12% FY26 growth starts from a weaker base." },
+      { claim: "Marketing spend grew only about 1%", source_figure: "10-Q: S&M $2,052M vs $1,862M; direct marketing $1,401M vs $1,388M", working: "Total S&M: 2,052 / 1,862 - 1 = 10.2%. Direct marketing: 1,401 / 1,388 - 1 = 0.9%. The CFO's 1% refers to direct marketing only.", status: "definition_difference", impact: "The leverage story depends on which line you use. Total S&M grew 10%, below revenue at 14%, so leverage exists but is far smaller than '1% vs 16%' implies." },
+      { claim: "Buybacks shrinking share count about 6% a year", source_figure: "10-Q: diluted shares 131.2M vs 139.0M", working: "131.2 / 139.0 - 1 = -5.6%.", status: "match", impact: "Supported." },
+      { claim: "Q3 net income beat consensus; earnings quality is clean", source_figure: "10-Q: other income $241M incl. $227M one-time gain", working: "Net income $812M includes a $227M one-time gain. Excluding it (before tax effects), about $585M.", status: "mismatch", impact: "The 'clean' earnings claim is not supported; part of the beat is non-recurring." },
+      { claim: "B2B growing 20%+ with expanding margins", source_figure: "10-Q: B2B revenue +24%; margin 31.0% vs 33.5%", working: "Growth 24% supports 20%+. Margin moved 33.5% -> 31.0%, down 250bp.", status: "mismatch", impact: "Margin claim is contradicted by the filing and by CFO guidance." },
+      { claim: "Valuation about 11.5x FY2027 EPS", source_figure: "Market data: consensus FY27 EPS $25.10", working: "Not in my inputs (no market data given to this agent). Cannot verify.", status: "cannot_verify", impact: "Check against market data." },
+    ],
+    summary: "Three of six checked claims do not match the filings: revenue growth (14.1%, not 16%), B2B margin expansion (margins fell 250bp), and earnings quality (a $227M one-time gain). The marketing claim is a definition difference that needs to be reconciled in the pitch.",
+  },
+  skeptic: {
+    objections: [
+      { pillar: "B2B is the growth engine", evidence: "B2B margin 31.0% vs 33.5%; CFO expects further pressure for 'the next few quarters'.", argument: "The model assumes B2B margin expands to 35%. Management is guiding the opposite direction. If margins stay near 31%, the EBITDA bridge loses a major leg.", severity: "breaks", if_true: "FY27 EPS falls toward consensus and the valuation upside largely disappears." },
+      { pillar: "Earnings quality", evidence: "Other income $241M includes a $227M one-time gain.", argument: "The 'clean beat' was partly a non-operating gain. Run-rate earnings are lower than the headline.", severity: "weakens", if_true: "Lowers the starting point for EPS growth." },
+      { pillar: "B2C re-acceleration", evidence: "Total S&M +10.2% vs direct marketing +0.9%; indirect marketing +37%.", argument: "Spend is shifting from performance marketing into brand and personnel. The 1% figure flatters the leverage.", severity: "weakens", if_true: "S&M leverage of 100bp/yr is at risk." },
+      { pillar: "Valuation", evidence: "Stock up 62% in 12 months; no peer multiples provided.", argument: "Cheap versus history may reflect a structurally lower multiple. Without peers, 'cheap' is not established.", severity: "weakens", if_true: "Target multiple of 13x may be too high." },
+    ],
+    strongest_objection: "The model's B2B margin expansion directly contradicts management guidance for near-term margin pressure.",
+    data_gaps: ["Peer multiples (Booking, Airbnb, Trip.com)", "Short interest and positioning", "B2B partner contract terms and pricing"],
+  },
+  other: {
+    counter_thesis: "Expedia is a share donor to Booking and to Google's AI trip planning; after a 62% run, the stock prices in a turnaround that the numbers only partly support.",
+    arguments: [
+      { point: "Most of the multiple re-rating has happened.", evidence: "Up 62% in 12 months; trades near the top of its 52-week range.", strength: "moderate" },
+      { point: "Distribution risk from AI search.", evidence: "Google is testing AI trip planning in search results, the largest source of Expedia's paid traffic.", strength: "moderate" },
+      { point: "B2B margins compress as big partners onboard.", evidence: "CFO guided to B2B margin pressure for the next few quarters.", strength: "strong" },
+      { point: "Bookings strength may be price-driven and fading.", evidence: "Airfares deflating; leisure demand normalizing.", strength: "weak" },
+    ],
+    what_would_change_my_mind: "Two quarters of stable B2B margins while onboarding new partners, and S&M growing clearly slower than revenue on a total basis.",
+  },
+  macro: {
+    factors: [
+      { factor: "Consumer travel demand", transmission: "Leisure spend drives B2C room nights and bookings.", evidence: "US travel spend growing mid-single digits and normalizing.", direction: "headwind", magnitude: "medium" },
+      { factor: "Strong US dollar", transmission: "Reduces translated international revenue and outbound demand into the US.", evidence: "Strong dollar noted in macro inputs.", direction: "headwind", magnitude: "low" },
+      { factor: "Labor market", transmission: "Rising unemployment hits discretionary travel first.", evidence: "Unemployment edging up from lows; sentiment softening.", direction: "headwind", magnitude: "medium" },
+      { factor: "Rate cuts next year", transmission: "Lower rates support consumer spending and a higher equity multiple.", evidence: "First cuts expected next year.", direction: "tailwind", magnitude: "low" },
+    ],
+    sensitivity_note: "The model's 11-12% revenue growth assumes demand stays firm. In a mild consumer slowdown, growth could drop to mid-to-high single digits.",
+    data_gaps: ["Booking-window and cancellation trends", "Regional mix of revenue"],
+  },
+  scenario: {
+    scenarios: [
+      { name: "thesis_fails", assumption_changes: ["B2B margin stays ~31%", "Revenue growth 8-9%", "No S&M leverage", "Exclude one-time gain"], working: "Starting from run-rate FY25 EPS ex-gain; revenue $17.2B FY27; EBITDA margin 21.5%; shares 120M -> EPS ~$23.79. Multiple compresses to 11x as growth disappoints.", eps: 23.79, multiple: 11.0, stated_price: 261.7, probability_justification: "B2B margin pressure is guided by management; a consumer slowdown is plausible. Meaningful but not the base case.", probability: 25 },
+      { name: "base", assumption_changes: ["Revenue growth 14% -> 10-11%", "B2B margin flat at ~32%", "S&M leverage 50bp/yr"], working: "Revenue $17.8B FY27; EBITDA margin 22.5%; shares 119M -> EPS ~$25.03. Multiple 12x, between current and history.", eps: 25.03, multiple: 12.0, stated_price: 300.4, probability_justification: "Matches reported trends after correcting revenue growth and margin direction.", probability: 55 },
+      { name: "thesis_works", assumption_changes: ["Revenue growth 11%", "B2B margin recovers to 34% by FY27", "Full S&M leverage"], working: "Analyst model less the one-time gain effect and slightly slower B2B margin recovery -> EPS ~$27.06. Re-rates to 13.5x.", eps: 27.06, multiple: 13.5, stated_price: 365.3, probability_justification: "Requires management to beat its own margin guidance.", probability: 20 },
+    ],
+    stated_expected_price: 303.5,
+    biggest_driver_of_gap: "B2B margin path: the pitch assumes expansion to 35%; filings and guidance point to compression.",
+  },
+  pm: {
+    reasoning: "Three factual errors go to the core of pillars 1, 2 and the earnings-quality claim. The code-computed expected return is +5.1% against a pitched +23.7%. The thesis is not broken, but it is not underwritable as written.",
+    pillar_scorecard: [
+      { pillar: "B2C re-acceleration", weight: 30, evidence_summary: "Revenue +14% not 16%; marketing leverage real but overstated.", score: 3 },
+      { pillar: "B2B growth engine", weight: 30, evidence_summary: "Growth confirmed; margin expansion contradicted by filings and guidance.", score: 2 },
+      { pillar: "Capital return", weight: 15, evidence_summary: "Share count down 5.6%; consistent with pitch.", score: 4 },
+      { pillar: "Valuation", weight: 25, evidence_summary: "Cheap vs history, but no peers; stock already up 62%.", score: 3 },
+    ],
+    top_objections: [
+      { objection: "B2B margin expansion contradicts management guidance.", source_agent: "Skeptic" },
+      { objection: "Part of the Q3 beat is a $227M one-time gain.", source_agent: "Skeptic" },
+      { objection: "Re-rating may be largely done after a 62% run.", source_agent: "Other Side" },
+    ],
+    factual_errors: [
+      { error: "Revenue grew 16%", correction: "Revenue grew 14.1%; 16% is gross bookings." },
+      { error: "B2B margins expanding", correction: "B2B margin fell from 33.5% to 31.0%." },
+      { error: "Earnings quality is clean", correction: "Net income includes a $227M one-time gain." },
+    ],
+    disagreements: [
+      { topic: "Marketing leverage", view: "Fact-Checker and Skeptic both flag that 1% is direct marketing only; total S&M grew 10.2%. Reconcile definitions in the model." },
+    ],
+    open_questions: ["What are peer multiples for Booking, Airbnb and Trip.com?", "What is short interest and positioning?", "How long does B2B margin pressure last?"],
+    key_question: "Can B2B margins expand while Expedia onboards several large partners, when management itself guides to pressure?",
+    kill_criteria: ["B2B margin below 30% for two consecutive quarters", "Total S&M growth above revenue growth", "Revenue growth below 8%"],
+    decision: "revise_and_resubmit",
+    conviction: 4,
+    one_line_summary: "Real business momentum, but the pitch overstates growth, misreads B2B margins and counts a one-time gain; expected return is about +5%, not +24%.",
+  },
+};
+
+/* ===== Role prompts =====
+   Every schema puts working/evidence BEFORE the verdict, because the
+   model writes in schema order and cannot go back (v1 bug). */
+const RULES = `Rules:
+- Use ONLY the inputs below plus general knowledge. If a needed figure is not in your inputs, say so; never invent numbers.
+- Show your working before any verdict.
+- Reply with ONLY one JSON object in exactly the schema shown. No prose before or after.`;
+
+const P = {
+  fact: `You are the FACT-CHECKER on a hedge fund investment committee. Your job: verify every quantitative or factual claim in the analyst's thesis against the filings and call notes.
+For each claim: find the source figure, do the arithmetic, THEN decide the status.
+Status options: "match" (within rounding), "mismatch" (source contradicts the claim), "definition_difference" (claim and source use different definitions of the same thing, e.g. one marketing line vs total S&M), "cannot_verify" (not in your inputs).
+${RULES}
+Schema:
+{"checks":[{"claim":"...","source_figure":"...","working":"arithmetic shown step by step","status":"match|mismatch|definition_difference|cannot_verify","impact":"why it matters for the thesis"}],"summary":"2-3 sentences"}`,
+
+  skeptic: `You are the SKEPTIC on a hedge fund investment committee. Your job: find the strongest reasons this thesis is wrong, pillar by pillar.
+Be calibrated, not reflexively negative. Severity scale:
+- "breaks": if this objection is right, the pillar fails and the target is not reachable.
+- "weakens": lowers confidence or upside, but the pillar survives.
+- "minor": worth noting, little effect on the call.
+A strong, well-supported pitch should get mostly "minor". Do not rate everything the same; justify each rating with evidence from the inputs.
+${RULES}
+Schema:
+{"objections":[{"pillar":"...","evidence":"specific figure or quote from inputs","argument":"...","if_true":"what happens to the thesis","severity":"breaks|weakens|minor"}],"strongest_objection":"one sentence","data_gaps":["data you would need but do not have"]}`,
+
+  other: `You are THE OTHER SIDE on a hedge fund investment committee. Your job: argue the opposite trade as a smart counterparty would. If the pitch is a long, make the best short case; if a short, the best long case.
+Rate each argument's strength honestly ("strong" only with clear evidence in the inputs).
+${RULES}
+Schema:
+{"counter_thesis":"one or two sentences","arguments":[{"point":"...","evidence":"...","strength":"strong|moderate|weak"}],"what_would_change_my_mind":"..."}`,
+
+  macro: `You are the MACRO analyst on a hedge fund investment committee. Your job: identify the macro and industry factors that drive this stock, explain how each one reaches the company's numbers, and judge whether the thesis is exposed.
+${RULES}
+Schema:
+{"factors":[{"factor":"...","transmission":"how it reaches revenue, margins or the multiple","evidence":"...","direction":"headwind|tailwind|neutral","magnitude":"high|medium|low"}],"sensitivity_note":"which model assumption is most exposed and how much","data_gaps":["..."]}`,
+
+  scenario: `You are the SCENARIO analyst on a hedge fund investment committee. Re-price the analyst's model using the four critics' findings.
+Build exactly three scenarios named "thesis_fails", "base", "thesis_works". For each, choose the inputs: FY EPS (same year and method as the analyst's model) and a P/E multiple, with a probability. Probabilities are whole numbers that sum to 100.
+Correct any factual errors the critics found before building scenarios.
+Return the INPUTS. The app computes prices, expected price and return in code. You may include your own "stated_price" per scenario and "stated_expected_price" so the app can check your arithmetic.
+${RULES}
+Schema:
+{"scenarios":[{"name":"thesis_fails|base|thesis_works","assumption_changes":["..."],"working":"how the EPS was derived","eps":0,"multiple":0,"stated_price":0,"probability_justification":"...","probability":0}],"stated_expected_price":0,"biggest_driver_of_gap":"the one assumption that explains most of the gap between the analyst's target and the expected price"}`,
+
+  pm: `You are the PORTFOLIO MANAGER chairing a hedge fund investment committee. Merge the critics' work and the scenario analysis into a one-page decision memo.
+Important:
+- The expected price and return under CODE-COMPUTED VALUATION were calculated by code. Use those numbers; do not recompute them.
+- Critics can be wrong. Before listing a factual error, check it against the filings excerpt you were given. If the filings do not support the critic, leave it out and mention it under disagreements.
+- Decision options: "approve" (size the position), "revise_and_resubmit" (promising but not underwritable as written), "reject".
+- Conviction is 1-10. Pillar weights are whole-number percentages summing to 100; scores are 1-5.
+${RULES}
+Schema:
+{"reasoning":"3-4 sentences that lead to the decision","pillar_scorecard":[{"pillar":"...","weight":0,"evidence_summary":"...","score":0}],"top_objections":[{"objection":"...","source_agent":"Fact-Checker|Skeptic|Other Side|Macro|Scenario"}],"factual_errors":[{"error":"...","correction":"..."}],"disagreements":[{"topic":"...","view":"..."}],"open_questions":["..."],"key_question":"the single question the analyst must answer","kill_criteria":["observable events that would make us exit"],"decision":"approve|revise_and_resubmit|reject","conviction":0,"one_line_summary":"..."}`,
+};
+
+const STAGES = [
+  { id: "fact", name: "Fact-Checker", layer: 1, q: "Are the numbers right?" },
+  { id: "skeptic", name: "Skeptic", layer: 1, q: "Why is this wrong?" },
+  { id: "other", name: "Other Side", layer: 1, q: "What's the opposite trade?" },
+  { id: "macro", name: "Macro", layer: 1, q: "What could the cycle do?" },
+  { id: "scenario", name: "Scenario", layer: 2, q: "What is it really worth?" },
+  { id: "pm", name: "Portfolio Manager", layer: 3, q: "Do we invest?" },
+];
+const CRITICS = ["fact", "skeptic", "other", "macro"];
+const STAGE = Object.fromEntries(STAGES.map(s => [s.id, s]));
+const TIER = { fact: "default", skeptic: "default", other: "default", macro: "default", scenario: "complex", pm: "complex" };
+
+/* Which inputs each agent sees. PM now also gets the filings so it can
+   check critics before repeating their "errors" (v1 chain-error fix). */
+const INPUTS = {
+  fact: ["thesis", "filings", "calls"],
+  skeptic: ["thesis", "filings", "calls"],
+  other: ["thesis", "calls", "market"],
+  macro: ["thesis", "filings", "macro"],
+  scenario: ["thesis", "model", "market"],
+  pm: ["thesis", "model", "filings"],
+};
+const FIELD_LABEL = { thesis: "ANALYST THESIS", model: "ANALYST MODEL", filings: "FILINGS EXCERPT", calls: "EARNINGS CALL NOTES", market: "MARKET DATA", macro: "MACRO CONTEXT" };
+
+/* Required shape of each agent's JSON. Checked after every call. */
+const SHAPES = {
+  fact: { checks: "array", summary: "string" },
+  skeptic: { objections: "array" },
+  other: { counter_thesis: "string", arguments: "array" },
+  macro: { factors: "array" },
+  scenario: { scenarios: "array" },
+  pm: { decision: "string", conviction: "number", pillar_scorecard: "array" },
+};
+
+function checkShape(id, v) {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return "returned something other than a JSON object";
+  const miss = [];
+  for (const [k, t] of Object.entries(SHAPES[id])) {
+    const x = v[k];
+    if (t === "array" && !Array.isArray(x)) miss.push(k);
+    if (t === "string" && typeof x !== "string") miss.push(k);
+    if (t === "number" && !Number.isFinite(toNum(x))) miss.push(k);
+  }
+  if (id === "scenario" && Array.isArray(v.scenarios)) {
+    if (v.scenarios.length < 2) miss.push("at least 2 scenarios");
+    v.scenarios.forEach((s, i) => {
+      const ip = impliedPrice(s || {});
+      if (!Number.isFinite(ip.price)) miss.push(`scenarios[${i}] EPS/multiple`);
+      if (!Number.isFinite(toNum(s && s.probability))) miss.push(`scenarios[${i}].probability`);
+    });
+  }
+  return miss.length ? "returned incomplete output (missing " + miss.join(", ") + ")" : null;
+}
+
+/* ===== State ===== */
+const $ = id => document.getElementById(id);
+let sample = null;          // live sampler from the runtime
+let run = null;             // current run
+let lastCalc = null;
+let consistency = null;
+let lastInputs = null;
+
+function readInputs() {
+  const v = id => $(id).value.trim();
+  return { ticker: v("ticker").toUpperCase(), direction: $("direction").value, price: v("price"), target: v("target"),
+           thesis: v("thesis"), model: v("model"), filings: v("filings"), calls: v("calls"), market: v("market"), macro: v("macro") };
+}
+
+function keyFacts(inp) {
+  return `KEY FACTS\nTicker: ${inp.ticker || "n/a"}\nDirection: ${inp.direction.toUpperCase()}\nCurrent price: $${inp.price || "n/a"}\nAnalyst target: $${inp.target || "n/a"}`;
+}
+
+function buildPrompt(id, R, inp) {
+  const parts = [P[id], "\n===== INPUTS =====", keyFacts(inp)];
+  for (const f of INPUTS[id]) parts.push(`\n--- ${FIELD_LABEL[f]} ---\n${inp[f] || "(not provided)"}`);
+  if (id === "scenario" || id === "pm") {
+    for (const c of CRITICS) parts.push(`\n--- ${STAGE[c].name.toUpperCase()} OUTPUT ---\n${JSON.stringify(R[c])}`);
+  }
+  if (id === "pm") {
+    parts.push(`\n--- SCENARIO OUTPUT ---\n${JSON.stringify(R.scenario)}`);
+    const c = R.calc;
+    parts.push(`\n--- CODE-COMPUTED VALUATION (authoritative) ---\n` + JSON.stringify({
+      scenario_prices: c.rows.map(r => ({ name: r.name, price: +r.implied.toFixed(2), probability: r.probability })),
+      expected_price: c.expectedPrice != null ? +c.expectedPrice.toFixed(2) : null,
+      expected_return_pct: c.expectedReturn != null ? +(c.expectedReturn * 100).toFixed(1) : null,
+      analyst_target_return_pct: c.targetReturn != null ? +(c.targetReturn * 100).toFixed(1) : null,
+      gap_to_target: c.gapToTarget != null ? +c.gapToTarget.toFixed(2) : null,
+      warnings: c.warnings,
+    }));
+  }
+  return parts.join("\n");
+}
+
+/* ===== Sampler: live Claude, or replay of the saved run ===== */
+const ERR = {
+  not_granted: "Claude access wasn't allowed for this page. Use Replay sample run, or reload and allow it.",
+  sampling_disabled: "Claude isn't available on this account.",
+  rate_limited: "Too many requests right now. Wait a minute, then press Retry.",
+  session_expired: "Your Claude session expired. Sign in again, then press Retry.",
+  invalid_json: "The agent's reply wasn't valid JSON. Press Retry.",
+  refused: "Claude declined this input. Edit the inputs and run again.",
+  prompt_too_large: "The inputs are too long. Shorten the filings or call notes.",
+  empty_completion: "The agent returned nothing. Press Retry.",
+  upstream_error: "Connection problem. Press Retry.",
+};
+const sleep = (ms, signal) => new Promise((res, rej) => {
+  const t = setTimeout(res, ms);
+  signal && signal.addEventListener("abort", () => { clearTimeout(t); rej({ code: "cancelled" }); }, { once: true });
+});
+
+async function askAgent(id, prompt, signal, opts) {
+  if (run.mode === "demo") {
+    await sleep({ fact: 7200, skeptic: 9400, other: 6100, macro: 4800, scenario: 6500, pm: 7500 }[id], signal);
+    return JSON.parse(JSON.stringify(DEMO[id]));
+  }
+  return sample.json(prompt, { signal, modelTier: TIER[id], cache: opts.cache });
+}
+
+/* ===== Orchestration =====
+   Critics run in parallel with allSettled; any failed agent gets its own
+   Retry. Scenario and PM run only once all four critics have succeeded. */
+async function callAgent(id) {
+  const r = run;
+  const ctl = new AbortController();
+  r.ctls.add(ctl);
+  r.status[id] = "running"; r.err[id] = null; r.started[id] = Date.now();
+  paintStages();
+  try {
+    const prompt = buildPrompt(id, r.R, r.inp);
+    const out = await askAgent(id, prompt, ctl.signal, { cache: r.cache });
+    const bad = checkShape(id, out);
+    if (bad) throw { code: "shape", message: bad };
+    r.R[id] = out; r.status[id] = "done";
+  } catch (e) {
+    r.status[id] = e && e.code === "cancelled" ? "stopped" : "failed";
+    r.err[id] = e && e.code === "shape" ? `${STAGE[id].name} ${e.message}.` : (ERR[e && e.code] || ERR.upstream_error);
+    if (e && e.code === "not_granted") r.fatal = true;
+  } finally {
+    r.ended[id] = Date.now(); r.ctls.delete(ctl);
+    if (r === run) { paintStages(); renderRaw(); }
+  }
+  return r.status[id] === "done";
+}
+
+async function advance() {
+  const r = run;
+  const missing = CRITICS.filter(c => r.status[c] !== "done");
+  if (missing.length) {
+    await Promise.allSettled(missing.filter(c => r.status[c] !== "running").map(callAgent));
+  }
+  if (r !== run || r.stopped) return finish(false);
+  if (CRITICS.some(c => r.status[c] !== "done")) return finish(false);
+
+  if (r.mode === "demo") setStatus("Stage 2: the Scenario agent is re-pricing the model with the critics' findings.");
+  if (r.status.scenario !== "done" && !(await callAgent("scenario"))) return finish(false);
+  r.R.calc = computeScenarios(r.R.scenario.scenarios, {
+    price: r.inp.price, target: r.inp.target, direction: r.inp.direction,
+    statedExpected: r.R.scenario.stated_expected_price,
+  });
+  lastCalc = r.R.calc;
+  renderScen();
+
+  if (r.mode === "demo") setStatus("Stage 3: the Portfolio Manager is writing the memo.");
+  if (r.status.pm !== "done" && !(await callAgent("pm"))) return finish(false);
+  renderMemo();
+  return finish(true);
+}
+
+function newRun(mode, cache) {
+  const inp = mode === "demo" ? { ...EX } : readInputs();
+  lastInputs = inp;
+  run = { mode, cache, inp, R: {}, status: {}, err: {}, started: {}, ended: {}, ctls: new Set(), stopped: false, done: null, t0: Date.now() };
+  STAGES.forEach(s => (run.status[s.id] = "waiting"));
+  run.done = new Promise(res => (run.resolve = res));
+  $("results").hidden = false;
+  $("memo").replaceChildren(placeholder("The memo appears here once the Portfolio Manager finishes."));
+  $("scen").replaceChildren(placeholder("Scenario prices appear after Stage 2."));
+  $("rawwrap").replaceChildren();
+  $("demoBanner").hidden = mode !== "demo";
+  setBusy(true);
+  paintStages();
+  return run;
+}
+
+function finish(ok) {
+  const r = run;
+  if (!r.finished) {
+    r.finished = true; r.ok = ok;
+    setBusy(false);
+    const failed = STAGES.filter(s => r.status[s.id] === "failed");
+    const msg = ok ? `Committee finished in ${fmtDur(Date.now() - r.t0)}.`
+      : r.stopped ? "Run stopped."
+      : failed.length ? `${failed.map(s => s.name).join(", ")} failed. Press Retry on that agent to continue from where it stopped.`
+      : "";
+    setStatus(msg, ok ? "ok" : failed.length ? "bad" : "");
+    if (ok && r.mode === "demo") setTimeout(() => $("memo").scrollIntoView({ behavior: "smooth", block: "start" }), 400);
+    r.resolve(ok);
+  }
+  return ok;
+}
+
+async function retry(id) {
+  if (!run) return;
+  run.finished = false; run.stopped = false;
+  run.done = new Promise(res => (run.resolve = res));
+  setBusy(true); setStatus("");
+  run.status[id] = "waiting";
+  // Downstream results depend on this agent; recompute them.
+  if (STAGE[id].layer === 1) { delete run.R.scenario; delete run.R.pm; run.status.scenario = run.status.pm = "waiting"; }
+  if (id === "scenario") { delete run.R.pm; run.status.pm = "waiting"; }
+  await callAgent(id);
+  if (run.status[id] === "done") advance(); else finish(false);
+}
+
+function stopRun() {
+  if (!run) return;
+  run.stopped = true;
+  run.ctls.forEach(c => c.abort());
+  if (consistency) consistency.stopped = true;
+}
+
+async function startLive(cache) {
+  const inp = readInputs();
+  const err = validateInputs(inp);
+  if (err) { setStatus(err, "bad"); return false; }
+  newRun("live", cache);
+  setStatus("Stage 1: four critics are reviewing the pitch in parallel. A full run takes 2 to 4 minutes.");
+  collapseInputs(true);
+  await advance();
+  return run.done;
+}
+
+async function startDemo() {
+  newRun("demo", true);
+  setStatus("Stage 1: four critics are reviewing the pitch in parallel.");
+  collapseInputs(true);
+  fill();
+  return advance();
+}
+
+/* ===== Consistency test: same inputs, 3 fresh runs (cache off) ===== */
+async function startConsistency() {
+  const inp = readInputs();
+  const err = validateInputs(inp);
+  if (err) { setStatus(err, "bad"); return; }
+  consistency = { runs: [], stopped: false };
+  $("consist").hidden = false;
+  $("consist").replaceChildren(h("h2", {}, "Consistency test"), placeholder("Run 1 of 3 in progress..."));
+  for (let i = 0; i < 3 && !consistency.stopped; i++) {
+    newRun("live", false);
+    setStatus(`Consistency test: run ${i + 1} of 3. Each run takes 2 to 4 minutes; cache is off so every answer is fresh.`);
+    collapseInputs(true);
+    const ok = await advance();
+    if (!ok) { setStatus(`Consistency test paused at run ${i + 1}. Fix the failed agent with Retry, then start the test again.`, "bad"); break; }
+    consistency.runs.push(snapshotRun(run));
+    renderConsistency();
+  }
+  if (consistency.runs.length === 3) {
+    setStatus("Consistency test finished. Findings that repeat across runs are the ones to trust.", "ok");
+    clusterFindings();
+  }
+}
+
+function snapshotRun(r) {
+  const sk = arr(r.R.skeptic.objections);
+  return {
+    decision: r.R.pm.decision, conviction: toNum(r.R.pm.conviction),
+    expectedReturn: r.R.calc.expectedReturn, expectedPrice: r.R.calc.expectedPrice,
+    errors: arr(r.R.pm.factual_errors).map(e => str(e.error || e)),
+    mismatches: arr(r.R.fact.checks).filter(c => c.status === "mismatch").length,
+    severity: { breaks: sk.filter(o => o.severity === "breaks").length, weakens: sk.filter(o => o.severity === "weakens").length, minor: sk.filter(o => o.severity === "minor").length },
+    objections: sk.map(o => str(o.argument || o.pillar)),
+    keyQ: str(r.R.pm.key_question),
+  };
+}
+
+async function clusterFindings() {
+  const box = $("clusters");
+  if (!box) return;
+  box.replaceChildren(placeholder("Grouping repeated findings..."));
+  const runs = consistency.runs.map((r, i) => ({ run: i + 1, factual_errors: r.errors, skeptic_objections: r.objections }));
+  try {
+    const out = await sample.json(`You compare three runs of the same AI investment committee on identical inputs. Group findings that say the same thing in different words, and count in how many runs (1-3) each appears.
+Reply with ONLY JSON: {"findings":[{"finding":"short neutral statement","kind":"factual_error|objection","runs":[1,2,3]}]}
+Runs:\n${JSON.stringify(runs)}`, { modelTier: "quick", cache: false });
+    const f = arr(out.findings).sort((a, b) => arr(b.runs).length - arr(a.runs).length);
+    box.replaceChildren(h("table", { class: "tbl" },
+      h("thead", {}, h("tr", {}, h("th", {}, "Finding"), h("th", {}, "Type"), h("th", { class: "r" }, "Runs"))),
+      h("tbody", {}, ...f.map(x => {
+        const n = arr(x.runs).length;
+        return h("tr", {}, h("td", {}, str(x.finding)), h("td", {}, x.kind === "factual_error" ? "Factual error" : "Objection"),
+          h("td", { class: "r" }, h("span", { class: "chip " + (n === 3 ? "good" : n === 2 ? "warn" : "muted") }, `${n} of 3`)));
+      }))));
+  } catch (e) {
+    box.replaceChildren(placeholder("Couldn't group findings automatically. Compare the runs in the table above."));
+  }
+}
+
+function validateInputs(inp) {
+  if (!sample) return "Live runs need Claude. Open this page in Claude, or use Replay sample run.";
+  if (!inp.thesis) return "Add the analyst thesis before running.";
+  if (!(toNum(inp.price) > 0)) return "Enter the current share price.";
+  return null;
+}
+
+/* ===== Rendering ===== */
+function h(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null || v === false) continue;
+    if (k === "class") e.className = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v === true ? "" : v);
+  }
+  for (const k of kids.flat()) if (k != null && k !== false) e.append(k instanceof Node ? k : document.createTextNode(String(k)));
+  return e;
+}
+const arr = v => (Array.isArray(v) ? v : v == null ? [] : [v]);
+const str = v => (v == null ? "" : typeof v === "string" ? v : typeof v === "object" ? Object.values(v).filter(x => typeof x === "string").join(" — ") : String(v));
+const money = v => (Number.isFinite(v) ? "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—");
+const pct = (v, d = 1) => (Number.isFinite(v) ? (v >= 0 ? "+" : "−") + Math.abs(v * 100).toFixed(d) + "%" : "—");
+const fmtDur = ms => { const s = Math.round(ms / 1000); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+const placeholder = t => h("p", { class: "ph" }, t);
+const labelize = s => String(s || "").replace(/_/g, " ").replace(/^\w/, c => c.toUpperCase());
+
+function setStatus(msg, kind) { const s = $("status"); s.textContent = msg; s.className = "status " + (kind || ""); s.hidden = !msg; }
+function setBusy(b) {
+  $("run").disabled = b;
+  $("stop").hidden = !b;
+}
+function collapseInputs(c) { $("inputs").classList.toggle("collapsed", c); $("toggleInputs").textContent = c ? "Show inputs" : "Hide inputs"; $("toggleInputs").setAttribute("aria-expanded", String(!c)); }
+
+let ticker = null;
+function paintStages() {
+  if (!run) return;
+  for (const s of STAGES) {
+    const card = $("st-" + s.id);
+    const st = run.status[s.id];
+    card.dataset.state = st;
+    const lab = card.querySelector(".st-state");
+    const t = run.started[s.id] ? fmtDur((st === "running" ? Date.now() : run.ended[s.id]) - run.started[s.id]) : "";
+    lab.textContent = { waiting: "Waiting", running: "Thinking " + t, done: "Done · " + t, failed: "Failed", stopped: "Stopped" }[st] || "";
+    const errEl = card.querySelector(".st-err");
+    errEl.textContent = run.err[s.id] || ""; errEl.hidden = !run.err[s.id];
+    card.querySelector(".st-retry").hidden = !(st === "failed" || st === "stopped") || run.fatal || STAGES.some(x => run.status[x.id] === "running");
+  }
+  const anyRunning = STAGES.some(s => run.status[s.id] === "running");
+  if (anyRunning && !ticker) ticker = setInterval(paintStages, 1000);
+  if (!anyRunning && ticker) { clearInterval(ticker); ticker = null; }
+}
+
+const DECISION = { approve: ["Approve", "good"], revise_and_resubmit: ["Revise and resubmit", "warn"], reject: ["Reject", "bad"] };
+
+function renderMemo() {
+  const M = run.R.pm, C = run.R.calc, inp = run.inp;
+  const [dLabel, dTone] = DECISION[String(M.decision).toLowerCase()] || [labelize(M.decision), "muted"];
+  const conv = Math.max(0, Math.min(10, Math.round(toNum(M.conviction)) || 0));
+  const sc = arr(M.pillar_scorecard);
+  const normW = w => { const n = toNum(w); return Number.isFinite(n) ? (n <= 1 ? n * 100 : n) : NaN; };
+
+  const memo = h("article", { class: "memo" },
+    h("header", { class: "memo-head" },
+      h("div", { class: "memo-meta" },
+        h("span", { class: "eyebrow" }, `Investment committee memo · ${inp.ticker || "—"} ${inp.direction}`),
+        h("span", { class: "eyebrow" }, new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }))),
+      h("div", { class: "decision-row" },
+        h("span", { class: "pill " + dTone }, dLabel),
+        h("div", { class: "conv", "aria-label": `Conviction ${conv} of 10` },
+          h("span", { class: "conv-label" }, "Conviction"),
+          h("span", { class: "conv-bar" }, ...Array.from({ length: 10 }, (_, i) => h("i", { class: i < conv ? "on " + dTone : "" }))),
+          h("span", { class: "conv-num" }, `${conv}/10`))),
+      h("p", { class: "summary" }, str(M.one_line_summary))),
+    h("div", { class: "kpis" },
+      kpi("Pitched return", pct(C.targetReturn), `Target ${money(C.target)}`),
+      kpi("Expected return", pct(C.expectedReturn), `Probability-weighted ${money(C.expectedPrice)}`, true),
+      kpi("Gap to target", money(C.gapToTarget), "Target minus expected price"),
+      kpi("AI math check", C.corrections ? `${C.corrections} corrected` : "Confirmed", C.corrections ? "Code numbers used in memo" : "AI arithmetic within 1% of code")),
+    h("p", { class: "reasoning" }, str(M.reasoning)),
+    h("div", { class: "grid2" },
+      section("Key question", h("p", { class: "keyq" }, str(M.key_question))),
+      section("Kill criteria", list(arr(M.kill_criteria).map(str)))),
+    section("Pillar scorecard",
+      h("div", { class: "tblwrap" }, h("table", { class: "tbl" },
+        h("thead", {}, h("tr", {}, h("th", {}, "Pillar"), h("th", { class: "r" }, "Weight"), h("th", {}, "Evidence"), h("th", { class: "r" }, "Score"))),
+        h("tbody", {}, ...sc.map(p => h("tr", {},
+          h("td", { class: "strong" }, str(p.pillar)),
+          h("td", { class: "r num" }, Number.isFinite(normW(p.weight)) ? Math.round(normW(p.weight)) + "%" : "—"),
+          h("td", {}, str(p.evidence_summary || p.assessment)),
+          h("td", { class: "r" }, h("span", { class: "dots", "aria-label": `${toNum(p.score)} of 5` }, ...Array.from({ length: 5 }, (_, i) => h("i", { class: i < toNum(p.score) ? "on" : "" })))))))))),
+    h("div", { class: "grid2" },
+      section("Top objections", list(arr(M.top_objections).map(o => h("span", {}, str(o.objection || o), o.source_agent ? h("span", { class: "src" }, " · " + o.source_agent) : null)))),
+      section("Factual errors in the pitch", arr(M.factual_errors).length
+        ? list(arr(M.factual_errors).map(e => h("span", {}, h("s", {}, str(e.error)), " → ", h("strong", {}, str(e.correction)))))
+        : placeholder("None found."))),
+    h("div", { class: "grid2" },
+      section("Where the agents disagree", arr(M.disagreements).length ? list(arr(M.disagreements).map(d => h("span", {}, h("strong", {}, str(d.topic) + ": "), str(d.view)))) : placeholder("No disagreements recorded.")),
+      section("Open questions and missing data", list(arr(M.open_questions).map(str)))),
+    h("footer", { class: "memo-foot" },
+      h("span", {}, "Prices, expected price and returns computed in code from the Scenario agent's EPS, multiples and probabilities. AI output; a human reviews before any trade."),
+      h("button", { class: "btn ghost", type: "button", onclick: exportMemo }, "Download memo (.md)")));
+  $("memo").replaceChildren(memo);
+}
+
+function kpi(label, value, sub, hero) {
+  return h("div", { class: "kpi" + (hero ? " hero" : "") }, h("span", { class: "kpi-l" }, label), h("span", { class: "kpi-v" }, value), h("span", { class: "kpi-s" }, sub));
+}
+function section(title, body) { return h("section", { class: "msec" }, h("h3", {}, title), body); }
+function list(items) { return items.length ? h("ul", { class: "mlist" }, ...items.map(i => h("li", {}, i))) : placeholder("None."); }
+
+function renderScen(overrides) {
+  const S = run.R.scenario, inp = run.inp;
+  const isOverride = !!(overrides && overrides.some((v, i) => v !== "" && v != null && toNum(v) !== toNum(S.scenarios[i].probability)));
+  const C = computeScenarios(S.scenarios, { price: inp.price, target: inp.target, direction: inp.direction, statedExpected: isOverride ? null : S.stated_expected_price, overrides });
+  const rows = C.rows.map((r, i) => h("tr", {},
+    h("td", { class: "strong" }, labelize(r.name)),
+    h("td", { class: "r num" }, r.method === "pe" ? money(r.eps) : "EV/EBITDA"),
+    h("td", { class: "r num" }, Number.isFinite(r.multiple) ? r.multiple.toFixed(1) + "x" : "—"),
+    h("td", { class: "r num strong" }, money(r.implied)),
+    h("td", { class: "r num" }, pct(r.implied / C.price - 1)),
+    h("td", { class: "r" }, h("input", { class: "prob", id: "prob-" + i, type: "number", min: "0", max: "100", step: "1",
+      value: overrides && overrides[i] !== "" && overrides[i] != null ? overrides[i] : toNum(S.scenarios[i].probability),
+      "aria-label": `Probability for ${labelize(r.name)}`, oninput: onOverride })),
+    h("td", {}, r.stated == null ? h("span", { class: "chip muted" }, "No AI price")
+      : h("span", { class: "chip " + (r.corrected ? "bad" : "good"), title: `AI said ${money(r.stated)}` },
+        r.corrected ? `AI math corrected (${pct(r.diffPct)})` : `AI ${money(r.stated)} ✓`))));
+  const ec = C.expectedCheck;
+  const box = h("div", {},
+    h("div", { class: "tblwrap" }, h("table", { class: "tbl scen" },
+      h("thead", {}, h("tr", {}, h("th", {}, "Scenario"), h("th", { class: "r" }, "EPS"), h("th", { class: "r" }, "P/E"), h("th", { class: "r" }, "Price"), h("th", { class: "r" }, "vs. today"), h("th", { class: "r" }, "Prob. %"), h("th", {}, "AI math check"))),
+      h("tbody", {}, ...rows),
+      h("tfoot", {}, h("tr", {},
+        h("td", { colspan: "3", class: "strong" }, isOverride ? "Expected (your probabilities)" : "Expected (probability-weighted)"),
+        h("td", { class: "r num strong" }, money(C.expectedPrice)),
+        h("td", { class: "r num strong" }, pct(C.expectedReturn)),
+        h("td", { class: "r num " + (Math.abs(C.probSum - 100) <= 0.5 ? "" : "badtxt") }, Math.round(C.probSum * 10) / 10 + "%"),
+        h("td", {}, ec ? h("span", { class: "chip " + (ec.corrected ? "bad" : "good") }, ec.corrected ? `AI said ${money(ec.stated)}: corrected` : `AI said ${money(ec.stated)} ✓`) : ""))))),
+    C.warnings.length ? h("p", { class: "warn-line", role: "alert" }, C.warnings.join(" ")) : null,
+    h("p", { class: "fine" }, `Price = EPS × P/E. Expected price = Σ price × probability. Return ${C.direction === "short" ? "is flipped for a short. " : "= expected ÷ current − 1. "}Edit a probability to see the expected return change; the memo keeps the committee's numbers.`),
+    isOverride ? h("button", { class: "btn ghost sm", type: "button", onclick: () => renderScen() }, "Reset probabilities") : null,
+    h("p", { class: "driver" }, h("strong", {}, "Biggest driver of the gap: "), str(S.biggest_driver_of_gap)));
+  $("scen").replaceChildren(box);
+}
+function onOverride() {
+  const ov = run.R.scenario.scenarios.map((_, i) => $("prob-" + i).value);
+  const focus = document.activeElement && document.activeElement.id;
+  renderScen(ov);
+  if (focus) { const el = $(focus); if (el) { el.focus(); const v = el.value; el.value = ""; el.value = v; } }
+}
+
+function renderRaw() {
+  const wrap = $("rawwrap");
+  wrap.replaceChildren(...STAGES.filter(s => run.R[s.id]).map(s =>
+    h("details", { class: "raw" },
+      h("summary", {}, h("span", { class: "strong" }, s.name), h("span", { class: "fine" }, " · " + s.q)),
+      agentView(s.id, run.R[s.id]),
+      h("details", { class: "json" }, h("summary", {}, "Raw JSON"), h("pre", {}, JSON.stringify(run.R[s.id], null, 2))))));
+}
+
+const TONE = { match: "good", mismatch: "bad", definition_difference: "warn", cannot_verify: "muted", breaks: "bad", weakens: "warn", minor: "muted",
+  strong: "bad", moderate: "warn", weak: "muted", headwind: "bad", tailwind: "good", neutral: "muted" };
+function tag(v) { return h("span", { class: "chip " + (TONE[v] || "muted") }, labelize(v)); }
+function agentView(id, v) {
+  if (id === "fact") return h("div", { class: "av" }, h("p", {}, str(v.summary)), ...arr(v.checks).map(c => h("div", { class: "item" },
+    h("div", { class: "item-h" }, tag(c.status), h("span", { class: "strong" }, str(c.claim))),
+    h("p", { class: "fine" }, "Source: " + str(c.source_figure)), h("p", { class: "mono" }, str(c.working)), h("p", {}, str(c.impact)))));
+  if (id === "skeptic") return h("div", { class: "av" }, h("p", {}, h("strong", {}, "Strongest objection: "), str(v.strongest_objection)), ...arr(v.objections).map(o => h("div", { class: "item" },
+    h("div", { class: "item-h" }, tag(o.severity), h("span", { class: "strong" }, str(o.pillar))),
+    h("p", {}, str(o.argument)), h("p", { class: "fine" }, "Evidence: " + str(o.evidence)), o.if_true ? h("p", { class: "fine" }, "If true: " + str(o.if_true)) : null)),
+    arr(v.data_gaps).length ? h("p", { class: "fine" }, "Data gaps: " + arr(v.data_gaps).map(str).join("; ")) : null);
+  if (id === "other") return h("div", { class: "av" }, h("p", {}, h("strong", {}, "Counter-thesis: "), str(v.counter_thesis)), ...arr(v.arguments).map(a => h("div", { class: "item" },
+    h("div", { class: "item-h" }, tag(a.strength), h("span", { class: "strong" }, str(a.point))), h("p", { class: "fine" }, str(a.evidence)))),
+    h("p", { class: "fine" }, "Would change my mind: " + str(v.what_would_change_my_mind)));
+  if (id === "macro") return h("div", { class: "av" }, ...arr(v.factors).map(f => h("div", { class: "item" },
+    h("div", { class: "item-h" }, tag(f.direction), h("span", { class: "strong" }, str(f.factor)), h("span", { class: "fine" }, " · " + labelize(f.magnitude) + " impact")),
+    h("p", {}, str(f.transmission)), h("p", { class: "fine" }, str(f.evidence)))), h("p", {}, h("strong", {}, "Most exposed: "), str(v.sensitivity_note)));
+  if (id === "scenario") return h("div", { class: "av" }, ...arr(v.scenarios).map(s => h("div", { class: "item" },
+    h("div", { class: "item-h" }, h("span", { class: "strong" }, labelize(s.name)), h("span", { class: "fine" }, ` · EPS ${s.eps} × ${s.multiple}x · ${s.probability}%`)),
+    h("p", {}, arr(s.assumption_changes).map(str).join("; ")), h("p", { class: "mono" }, str(s.working)), h("p", { class: "fine" }, str(s.probability_justification)))));
+  return h("div", { class: "av" }, h("p", {}, str(v.reasoning)));
+}
+
+function renderConsistency() {
+  const runs = consistency.runs;
+  const box = $("consist");
+  const convs = runs.map(r => r.conviction), rets = runs.map(r => r.expectedReturn).filter(Number.isFinite);
+  const spread = a => a.length ? Math.max(...a) - Math.min(...a) : NaN;
+  const sameDecision = runs.every(r => r.decision === runs[0].decision);
+  box.replaceChildren(
+    h("h2", {}, "Consistency test"),
+    h("p", { class: "fine" }, `Same inputs, ${runs.length} of 3 fresh runs (cache off). Trust what repeats.`),
+    h("div", { class: "tblwrap" }, h("table", { class: "tbl" },
+      h("thead", {}, h("tr", {}, h("th", {}, "Run"), h("th", {}, "Decision"), h("th", { class: "r" }, "Conviction"), h("th", { class: "r" }, "Expected return"), h("th", { class: "r" }, "Fact mismatches"), h("th", {}, "Skeptic severities"))),
+      h("tbody", {}, ...runs.map((r, i) => h("tr", {},
+        h("td", {}, "Run " + (i + 1)), h("td", {}, (DECISION[r.decision] || [labelize(r.decision)])[0]),
+        h("td", { class: "r num" }, r.conviction + "/10"), h("td", { class: "r num" }, pct(r.expectedReturn)),
+        h("td", { class: "r num" }, r.mismatches), h("td", {}, `${r.severity.breaks} breaks · ${r.severity.weakens} weakens · ${r.severity.minor} minor`)))),
+      runs.length > 1 ? h("tfoot", {}, h("tr", {},
+        h("td", { class: "strong" }, "Spread"), h("td", {}, sameDecision ? "Same every run" : "Differs"),
+        h("td", { class: "r num" }, Number.isFinite(spread(convs)) ? spread(convs) + " pts" : "—"),
+        h("td", { class: "r num" }, Number.isFinite(spread(rets)) ? (spread(rets) * 100).toFixed(1) + " pts" : "—"), h("td", {}), h("td", {}))) : null)),
+    h("h3", {}, "Findings across runs"),
+    h("div", { id: "clusters" }, runs.length < 3 ? placeholder("Shown after all three runs.") : null));
+}
+
+/* ===== Export ===== */
+function memoMarkdown() {
+  const M = run.R.pm, C = run.R.calc, inp = run.inp;
+  const L = [];
+  L.push(`# Quorum memo: ${inp.ticker} (${inp.direction})`, "");
+  L.push(`**Decision:** ${(DECISION[M.decision] || [labelize(M.decision)])[0]} · **Conviction:** ${M.conviction}/10`, "", str(M.one_line_summary), "");
+  L.push(`| | |`, `|---|---|`, `| Current price | ${money(C.price)} |`, `| Analyst target | ${money(C.target)} (${pct(C.targetReturn)}) |`,
+    `| Expected price (code) | ${money(C.expectedPrice)} (${pct(C.expectedReturn)}) |`, `| Gap to target | ${money(C.gapToTarget)} |`, "");
+  L.push("## Reasoning", str(M.reasoning), "", "## Scenarios", "| Scenario | EPS | P/E | Price | Prob. |", "|---|---|---|---|---|");
+  C.rows.forEach(r => L.push(`| ${labelize(r.name)} | ${money(r.eps)} | ${r.multiple}x | ${money(r.implied)} | ${r.probability}% |`));
+  L.push("", "## Pillar scorecard", "| Pillar | Weight | Score | Evidence |", "|---|---|---|---|");
+  arr(M.pillar_scorecard).forEach(p => L.push(`| ${str(p.pillar)} | ${p.weight} | ${p.score}/5 | ${str(p.evidence_summary)} |`));
+  const sec = (t, a) => { L.push("", "## " + t); a.forEach(x => L.push("- " + x)); };
+  sec("Top objections", arr(M.top_objections).map(o => `${str(o.objection)} (${o.source_agent || ""})`));
+  sec("Factual errors", arr(M.factual_errors).map(e => `${str(e.error)} → ${str(e.correction)}`));
+  sec("Disagreements", arr(M.disagreements).map(d => `${str(d.topic)}: ${str(d.view)}`));
+  sec("Open questions", arr(M.open_questions).map(str));
+  L.push("", "## Key question", str(M.key_question));
+  sec("Kill criteria", arr(M.kill_criteria).map(str));
+  L.push("", "_Generated by Quorum, an AI investment committee. Valuation math computed in code. Human review required before any trade._");
+  return L.join("\n");
+}
+function exportMemo() {
+  const blob = new Blob([memoMarkdown()], { type: "text/markdown" });
+  const link = h("a", { href: URL.createObjectURL(blob), download: `IC-memo-${run.inp.ticker || "pitch"}.md` });
+  document.body.append(link); link.click(); link.remove();
+  setTimeout(() => URL.revokeObjectURL(link.href), 5000);
+}
+
+/* ===== Inputs ===== */
+const TABS = ["thesis", "model", "filings", "calls", "market", "macro"];
+function fill() { for (const k of ["ticker", "price", "target", ...TABS]) $(k).value = EX[k]; $("direction").value = EX.direction; }
+function showTab(t) {
+  TABS.forEach(k => { $("tab-" + k).setAttribute("aria-selected", String(k === t)); $("pane-" + k).hidden = k !== t; });
+}
+
+/* ===== Boot ===== */
+function boot() {
+  fill(); showTab("thesis");
+  TABS.forEach(k => ($("tab-" + k).onclick = () => showTab(k)));
+  $("restore").onclick = () => { fill(); setStatus("Restored the Expedia example.", ""); };
+  $("toggleInputs").onclick = () => collapseInputs(!$("inputs").classList.contains("collapsed"));
+  $("run").onclick = () => startDemo();
+  $("run3").onclick = () => startConsistency();
+  $("demo").onclick = () => startDemo();
+  $("stop").onclick = stopRun;
+  STAGES.forEach(s => ($("st-" + s.id).querySelector(".st-retry").onclick = () => retry(s.id)));
+  setBusy(false);
+
+}
+boot();
+
+/* ===== Quorum landing: views, particle hero, hover effects ===== */
+(function () {
+  document.documentElement.classList.add("js");
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const fine = window.matchMedia("(pointer: fine)").matches;
+  const home = document.getElementById("view-home"), demo = document.getElementById("view-demo");
+  const nav = document.getElementById("nav"), heroEl = document.getElementById("hero");
+
+  /* ---------- Views ---------- */
+  function route() {
+    const isDemo = location.hash === "#demo";
+    const changed = isDemo !== !demo.hidden;
+    home.hidden = isDemo; demo.hidden = !isDemo;
+    if (changed || location.hash === "#home") window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
+    navState();
+    Hero.setActive(!isDemo);
+  }
+  function navState() {
+    const overHero = !home.hidden && window.scrollY < heroEl.offsetHeight - 70;
+    nav.classList.toggle("over", overHero);
+    nav.classList.toggle("scrolled", !overHero && window.scrollY > 4);
+  }
+  window.addEventListener("scroll", navState, { passive: true });
+
+  /* ---------- Particle hero ---------- */
+  const Hero = (function () {
+    const cv = document.getElementById("fx"), ctx = cv.getContext("2d");
+    const slot = document.getElementById("numSlot"), cap = document.getElementById("numCap");
+    const SHAPES = [
+      { text: "+23.7%", cap: '<b>Pitched return</b> · Expedia long, as the analyst wrote it' },
+      { text: "+5.1%", cap: '<b>After the committee</b> · probability-weighted<span class="verdict">Revise and resubmit</span>' },
+    ];
+    let W = 0, H = 0, dpr = 1, P = [], dust = [], targets = [], shape = 0;
+    let phase = "form", phaseT = 0, k = 0.02, active = true, visible = true, raf = 0;
+    const m = { x: -1e4, y: -1e4, px: -1e4, py: -1e4, speed: 0, in: false };
+    let lastInteract = performance.now(), autoTimer = 0, built = false;
+
+    function sample(text) {
+      const r = slot.getBoundingClientRect(), hr = heroEl.getBoundingClientRect();
+      const cx = r.left - hr.left + r.width / 2, cy = r.top - hr.top + r.height / 2;
+      const off = document.createElement("canvas"); off.width = Math.ceil(W); off.height = Math.ceil(H);
+      const o = off.getContext("2d");
+      let fs = r.height * 0.92;
+      o.font = `600 ${fs}px Geist, ui-sans-serif, system-ui, sans-serif`;
+      const tw = o.measureText(text).width;
+      const maxW = Math.min(r.width * 0.96, W - 32);
+      if (tw > maxW) fs *= maxW / tw;
+      o.font = `600 ${fs}px Geist, ui-sans-serif, system-ui, sans-serif`;
+      o.textAlign = "center"; o.textBaseline = "middle"; o.fillStyle = "#fff";
+      o.fillText(text, cx, cy + fs * 0.04);
+      const data = o.getImageData(0, 0, off.width, off.height).data;
+      const gap = W < 560 ? 3 : W < 1000 ? 4 : 5, pts = [];
+      for (let y = 0; y < off.height; y += gap)
+        for (let x = 0; x < off.width; x += gap)
+          if (data[(y * off.width + x) * 4 + 3] > 140) pts.push([x + (Math.random() - .5) * 1.2, y + (Math.random() - .5) * 1.2]);
+      for (let i = pts.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [pts[i], pts[j]] = [pts[j], pts[i]]; }
+      return pts;
+    }
+
+    function build() {
+      const r = heroEl.getBoundingClientRect();
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      W = r.width; H = r.height;
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      targets = SHAPES.map(s => sample(s.text));
+      const n = Math.max(...targets.map(t => t.length));
+      const old = P;
+      P = new Array(n);
+      for (let i = 0; i < n; i++) {
+        const o = old[i];
+        P[i] = o ? o : { x: Math.random() * W, y: Math.random() * H, vx: 0, vy: 0, s: Math.random() };
+      }
+      assign();
+      dust = Array.from({ length: Math.round(W * H / (W < 600 ? 2200 : 2600)) }, () => {
+        const x = Math.random() * W, y = Math.random() * H;
+        return { hx: x, hy: y, x, y, vx: 0, vy: 0, z: Math.random() * .75 + .25, t: Math.random() * 6.28, near: 0 };
+      });
+      if (!built) { built = true; if (reduce) { P.forEach(p => { p.x = p.tx; p.y = p.ty; }); draw(); } }
+    }
+    function assign() {
+      const t = targets[shape];
+      for (let i = 0; i < P.length; i++) { const q = t[i % t.length]; P[i].tx = q[0]; P[i].ty = q[1]; }
+    }
+
+    function explode(x, y, power = 1) {
+      lastInteract = performance.now();
+      for (const p of P) {
+        const dx = p.x - x, dy = p.y - y, d = Math.hypot(dx, dy) || 1;
+        const sp = (8 + Math.random() * 18) * power * Math.max(.25, 1 - d / 900);
+        const a = Math.atan2(dy, dx) + (Math.random() - .5) * .9;
+        p.vx += Math.cos(a) * sp; p.vy += Math.sin(a) * sp - Math.random() * 2;
+      }
+      for (const d of dust) {
+        const dx = d.x - x, dy = d.y - y, dd = Math.hypot(dx, dy) || 1;
+        const sp = (6 + Math.random() * 10) * power * d.z * Math.max(.15, 1 - dd / 1100);
+        d.vx += dx / dd * sp; d.vy += dy / dd * sp;
+      }
+      phase = "burst"; phaseT = performance.now();
+      setTimeout(() => {
+        shape = (shape + 1) % SHAPES.length; assign();
+        cap.style.opacity = 0;
+        setTimeout(() => { cap.innerHTML = SHAPES[shape].cap; cap.style.opacity = 1; }, 250);
+        phase = "form"; phaseT = performance.now();
+      }, 650);
+    }
+
+    function step(now) {
+      raf = 0;
+      if (!active || !visible) return;
+      const since = now - phaseT;
+      if (phase === "form") k = Math.min(0.045, 0.004 + since / 1600 * 0.045);
+      const damp = phase === "burst" ? 0.955 : 0.86;
+      const R = W < 600 ? 80 : 130, R2 = R * R;
+      const force = 2.2 + Math.min(m.speed, 60) * 0.12;
+      for (const p of P) {
+        let ax = 0, ay = 0;
+        if (phase === "form") {
+          const dx = p.tx - p.x, dy = p.ty - p.y;
+          ax = dx * k; ay = dy * k;
+          if (since < 1400) { ax += -dy * 0.004 * (1 - since / 1400); ay += dx * 0.004 * (1 - since / 1400); }
+        } else ay += 0.08;
+        if (m.in) {
+          const dx = p.x - m.x, dy = p.y - m.y, d2 = dx * dx + dy * dy;
+          if (d2 < R2 && d2 > 0.01) { const d = Math.sqrt(d2), f = (1 - d / R) * force; ax += dx / d * f; ay += dy / d * f; }
+        }
+        p.vx = (p.vx + ax) * damp; p.vy = (p.vy + ay) * damp;
+        p.x += p.vx; p.y += p.vy;
+      }
+      // Background field: drifts, springs home, swirls away from the cursor
+      const DR = W < 600 ? 120 : 200, DR2 = DR * DR, push = 1.4 + Math.min(m.speed, 60) * 0.05;
+      for (const d of dust) {
+        d.hx += d.z * 0.12;
+        if (d.hx > W + 20) { d.hx -= W + 40; d.x -= W + 40; }
+        const wob = Math.sin(now / 2600 + d.t) * 0.35 * d.z;
+        let ax = (d.hx - d.x) * 0.006, ay = (d.hy + wob * 20 - d.y) * 0.006;
+        d.near = 0;
+        if (m.in) {
+          const dx = d.x - m.x, dy = d.y - m.y, d2 = dx * dx + dy * dy;
+          if (d2 < DR2 && d2 > 0.01) {
+            const dd = Math.sqrt(d2), f = 1 - dd / DR, ux = dx / dd, uy = dy / dd;
+            ax += (ux * push - uy * 0.9) * f * d.z; ay += (uy * push + ux * 0.9) * f * d.z;
+            d.near = f;
+          }
+        }
+        d.vx = (d.vx + ax) * 0.92; d.vy = (d.vy + ay) * 0.92;
+        d.x += d.vx; d.y += d.vy;
+      }
+      m.speed *= 0.9;
+      draw(now);
+      if (!reduce) raf = requestAnimationFrame(step);
+    }
+
+    function draw(now = 0) {
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.fillStyle = reduce ? "rgba(0,0,0,1)" : "rgba(0,0,0,0.32)";
+      ctx.fillRect(0, 0, W, H);
+      ctx.globalCompositeOperation = "lighter";
+      // background field
+      const near = [];
+      ctx.fillStyle = "rgba(160,170,255,0.55)";
+      for (const d of dust) {
+        if (d.near > 0) { near.push(d); continue; }
+        const s = d.z * 1.6 * (0.55 + 0.45 * Math.sin(now / 900 + d.t));
+        ctx.fillRect(d.x, d.y, s, s);
+      }
+      if (near.length) {
+        ctx.lineWidth = 0.6;
+        for (let i = 0; i < near.length; i++) {
+          const a = near[i];
+          ctx.strokeStyle = `rgba(150,162,255,${(a.near * 0.5).toFixed(3)})`;
+          ctx.beginPath(); ctx.moveTo(m.x, m.y); ctx.lineTo(a.x, a.y); ctx.stroke();
+          for (let j = i + 1; j < near.length; j++) {
+            const b = near[j], dx = a.x - b.x, dy = a.y - b.y, d2 = dx * dx + dy * dy;
+            if (d2 < 4900) {
+              ctx.strokeStyle = `rgba(140,152,255,${(Math.min(a.near, b.near) * 0.42 * (1 - d2 / 4900)).toFixed(3)})`;
+              ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+            }
+          }
+        }
+        for (const d of near) {
+          const s = d.z * (1.8 + d.near * 1.8);
+          ctx.fillStyle = `rgba(${Math.round(150 + d.near * 105)},${Math.round(162 + d.near * 40)},255,${(0.5 + d.near * 0.5).toFixed(2)})`;
+          ctx.fillRect(d.x - s / 2, d.y - s / 2, s, s);
+        }
+      }
+      // particles bucketed by speed
+      const size = W < 560 ? 1.7 : 2;
+      const buckets = [[], [], []];
+      for (const p of P) { const v = Math.abs(p.vx) + Math.abs(p.vy); buckets[v < 1.2 ? 0 : v < 6 ? 1 : 2].push(p); }
+      const cols = [shape === 0 ? "rgba(243,244,248,0.9)" : "rgba(170,180,255,0.95)", "rgba(123,136,255,0.95)", "rgba(255,150,120,0.95)"];
+      for (let b = 0; b < 3; b++) {
+        ctx.fillStyle = cols[b];
+        for (const p of buckets[b]) ctx.fillRect(p.x, p.y, size, size);
+      }
+      ctx.globalCompositeOperation = "source-over";
+    }
+
+    function kick() { if (!raf && active && visible && !reduce) raf = requestAnimationFrame(step); }
+
+    // Pointer
+    function pos(e) { const r = heroEl.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
+    heroEl.addEventListener("pointermove", e => {
+      const [x, y] = pos(e);
+      m.speed = m.in ? Math.hypot(x - m.x, y - m.y) : 0;
+      m.x = x; m.y = y; m.in = true; lastInteract = performance.now();
+      heroEl.style.setProperty("--mx", x + "px"); heroEl.style.setProperty("--my", y + "px");
+      kick();
+    });
+    heroEl.addEventListener("pointerleave", () => { m.in = false; });
+    heroEl.addEventListener("pointerdown", e => {
+      if (e.target.closest("a,button")) return;
+      const [x, y] = pos(e);
+      if (e.pointerType !== "mouse") { m.x = x; m.y = y; m.in = true; setTimeout(() => (m.in = false), 600); }
+      if (phase !== "burst") explode(x, y, 1);
+      document.getElementById("hint").style.opacity = .35;
+      kick();
+    });
+
+    // Idle auto-play so the hero is alive while presenting
+    function auto() {
+      clearTimeout(autoTimer);
+      autoTimer = setTimeout(() => {
+        if (active && visible && performance.now() - lastInteract > 5500 && phase !== "burst") {
+          const r = slot.getBoundingClientRect(), hr = heroEl.getBoundingClientRect();
+          explode(r.left - hr.left + r.width / 2, r.top - hr.top + r.height / 2, 0.8);
+        }
+        auto();
+      }, 6500);
+    }
+
+    new IntersectionObserver(es => { visible = es[0].isIntersecting; kick(); }).observe(heroEl);
+    document.addEventListener("visibilitychange", () => { visible = !document.hidden; kick(); });
+    let rt = 0;
+    window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { build(); kick(); }, 150); });
+
+    function start() { build(); phaseT = performance.now(); kick(); if (!reduce) auto(); }
+    if (document.fonts && document.fonts.load) {
+      Promise.race([document.fonts.load('600 100px "Geist"'), new Promise(r => setTimeout(r, 1200))]).then(start, start);
+    } else start();
+
+    return { setActive(a) { active = a; if (a) kick(); } };
+  })();
+
+  /* ---------- Magnetic buttons ---------- */
+  if (fine && !reduce) document.querySelectorAll(".magnetic").forEach(b => {
+    b.addEventListener("pointermove", e => {
+      const r = b.getBoundingClientRect();
+      b.style.transform = `translate(${(e.clientX - r.left - r.width / 2) * .22}px, ${(e.clientY - r.top - r.height / 2) * .3}px)`;
+    });
+    b.addEventListener("pointerleave", () => { b.style.transform = ""; });
+  });
+
+  /* ---------- Spotlight tiles ---------- */
+  document.querySelectorAll(".spot, .cc").forEach(t => t.addEventListener("pointermove", e => {
+    const r = t.getBoundingClientRect();
+    t.style.setProperty("--x", e.clientX - r.left + "px"); t.style.setProperty("--y", e.clientY - r.top + "px");
+  }));
+
+  /* ---------- 3D tilt on the committee card ---------- */
+  const cc = document.getElementById("cc");
+  if (fine && !reduce) {
+    cc.addEventListener("pointermove", e => {
+      const r = cc.getBoundingClientRect(), px = (e.clientX - r.left) / r.width - .5, py = (e.clientY - r.top) / r.height - .5;
+      cc.style.transform = `rotateY(${px * 8}deg) rotateX(${-py * 8}deg) translateZ(0)`;
+    });
+    cc.addEventListener("pointerleave", () => { cc.style.transform = ""; });
+  }
+
+  /* ---------- Committee card animation (plays when in view) ---------- */
+  const ccNum = document.getElementById("ccNum");
+  const fmtPct = v => (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(1) + "%";
+  function countTo(el, from, to, dur, fmt) {
+    const t0 = performance.now();
+    (function f(t) { const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3); el.textContent = fmt(from + (to - from) * e); if (k < 1) requestAnimationFrame(f); })(t0);
+  }
+  let ccTimers = [], ccOn = false;
+  function playCC() {
+    ccTimers.forEach(clearTimeout); ccTimers = [];
+    cc.classList.remove("play", "final"); void cc.offsetWidth;
+    ccNum.textContent = fmtPct(23.7); cc.classList.add("play");
+    ccTimers.push(setTimeout(() => countTo(ccNum, 23.7, 5.1, 1400, fmtPct), 5600));
+    ccTimers.push(setTimeout(() => cc.classList.add("final"), 7200));
+    ccTimers.push(setTimeout(() => { if (ccOn) playCC(); }, 11500));
+  }
+  if (reduce) { cc.classList.add("final"); ccNum.textContent = fmtPct(5.1); }
+  else new IntersectionObserver(es => { const v = es[0].isIntersecting; if (v && !ccOn) { ccOn = true; playCC(); } if (!v) ccOn = false; }, { threshold: .35 }).observe(cc);
+
+  /* ---------- Scroll reveals + count-ups ---------- */
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (!e.isIntersecting) return;
+    e.target.classList.add("in"); io.unobserve(e.target);
+    e.target.querySelectorAll(".count").forEach(c => {
+      const to = parseFloat(c.dataset.to);
+      countTo(c, 0, to, 1300, c.dataset.fmt === "ten" ? v => Math.round(v) + "/10" : fmtPct);
+    });
+  }), { threshold: .15, rootMargin: "0px 0px -40px 0px" });
+  document.querySelectorAll(".reveal, #steps").forEach((el, i) => {
+    if (!reduce) el.style.transitionDelay = (el.classList.contains("tile") ? (i % 3) * 80 : 0) + "ms";
+    io.observe(el);
+  });
+  setTimeout(() => document.querySelectorAll(".reveal:not(.in)").forEach(el => {
+    const r = el.getBoundingClientRect(); if (r.top < innerHeight) el.classList.add("in");
+  }), 2500);
+
+  window.addEventListener("hashchange", route);
+  route();
+})();
+
+</script>
